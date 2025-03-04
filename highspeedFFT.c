@@ -1555,31 +1555,42 @@ static void bluestein_exp(fft_data *hl, fft_data *hlt, int input_length, int pad
 /**
  * @brief Performs Bluestein’s FFT algorithm for arbitrary-length signals.
  *
- * Uses Bluestein’s chirp z-transform to compute the Fast Fourier Transform (FFT) for non-power-of-2 signal lengths.
- * This algorithm transforms the DFT of length \(N\) into a convolution of the input signal with a chirp sequence,
- * padded to a power-of-2 length for efficient computation using a standard FFT. It requires precomputed exponential
- * (chirp) terms and an FFT object initialized for the padded length to handle arbitrary \(N\) efficiently.
+ * Computes the Fast Fourier Transform (FFT) for any signal length \( N \), even when \( N \) is not a power of 2 or
+ * factorable into small primes (e.g., 15, 7). This algorithm transforms the DFT into a convolution problem by
+ * applying a "chirp" sequence, padding the result to a power-of-2 length \( M \), and using efficient FFT-based
+ * convolution to compute the transform. It serves as a fallback when mixed-radix decomposition is impractical.
  *
  * @param[in] input_data Input signal data (length N).
- *                      The real and imaginary components of the input signal to be transformed.
+ *                      Array of complex numbers (real and imaginary parts) representing the input sequence to transform.
  * @param[out] output_data Output FFT results (length N).
- *                       Stores the transformed complex values after applying Bluestein’s FFT.
- * @param[in] fft_obj FFT configuration object.
- *                   Contains the signal length, transform direction, prime factors, and precomputed twiddle factors,
- *                   temporarily modified for the padded length during computation.
+ *                       Stores the transformed complex values, representing frequency components.
+ * @param[in,out] fft_obj FFT configuration object.
+ *                       Contains signal length, transform direction, and twiddle factors; temporarily modified for padded length \( M \).
  * @param[in] transform_direction Direction of the transform (+1 for forward, -1 for inverse).
- *                             Determines whether to perform a forward FFT (\(e^{-2\pi i k n / N}\)) or
- *                             inverse FFT (\(e^{+2\pi i k n / N}\)).
+ *                             Determines whether to compute forward FFT (\( e^{-2\pi i k n / N} \)) or inverse FFT (\( e^{+2\pi i k n / N} \)).
  * @param[in] signal_length Length of the input signal (N > 0).
- *                        The size of the input and output data, which must be positive.
- * @warning If memory allocation fails or signal_length is invalid (<= 0), the function exits with an error.
- * @note Temporarily modifies the FFT object’s configuration (length, algorithm type, and twiddle factors) for the
- *       padded length, restoring the original state afterward. The algorithm uses a chirp z-transform,
- *       padding the input to a power-of-2 length (or larger if needed) and performing two FFTs and a pointwise
- *       multiplication to compute the DFT of arbitrary length \(N\).
- *       Mathematically, Bluestein’s FFT leverages the identity \(X(k) = \sum_{n=0}^{N-1} x(n) \cdot e^{-2\pi i k n / N}\)
- *       by transforming it into a convolution with a chirp sequence \(h(n) = e^{\pi i n^2 / N}\), enabling efficient
- *       computation via FFT-based convolution.
+ *                        Number of elements in the input and output arrays.
+ *
+ * @par Algorithm Overview
+ * Bluestein simplifies arbitrary-length FFTs by:
+ * -# **Chirp Multiplication**: Multiplies the input \( x(n) \) by a chirp sequence \( h^*(n) = e^{-\pi i n^2 / N} \) (or \( h(n) \) for inverse).
+ * -# **Padding**: Extends the result to a power-of-2 length \( M \geq 2N-1 \) with zeros for efficient FFT processing.
+ * -# **FFT Convolution**: Computes the FFT of the padded sequence and the chirp, multiplies them, and applies an inverse FFT.
+ * -# **Final Adjustment**: Multiplies the result by \( h^*(k) \) and extracts the first \( N \) elements to get \( X(k) \).
+ *
+ * @par Example
+ * For \( N = 3 \), input \( [1, 2, 3] \):
+ * - Chirp: \( [1, e^{i\pi/3}, e^{i4\pi/3}] \) (simplified).
+ * - Multiply: \( [1, 2 \cdot e^{-i\pi/3}, 3 \cdot e^{-i4\pi/3}] \).
+ * - Pad to \( M = 8 \): \( [..., 0, 0, 0, 0, 0] \).
+ * - FFT, multiply by chirp’s FFT, inverse FFT, adjust with chirp, output \( X[0], X[1], X[2] \).
+ *
+ * @warning If memory allocation fails or signal_length is invalid (\( \leq 0 \)), the function exits with an error message to stderr.
+ * @note Temporarily modifies fft_obj (length, type, twiddle factors) for the padded length \( M \), restoring it afterward.
+ *       Uses power-of-2 FFTs internally via `fft_exec`, leveraging `mixed_radix_dit_rec` for efficiency.
+ *       Complexity is \( O(M \log M) \) where \( M \approx 2N \), slower than radix-based FFT but universally applicable.
+ * @see bluestein_exp For chirp sequence generation.
+ * @see fft_exec For internal FFT computations.
  */
 static void bluestein_fft(fft_data *input_data, fft_data *output_data, fft_object fft_obj, int transform_direction, int signal_length) {
     /**

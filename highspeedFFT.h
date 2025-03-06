@@ -7,8 +7,8 @@
  * into smaller parts, using twiddle factors, and combining them into frequency 
  * buckets—all in the context of the provided code.
  * 
- * @author Grok 3 (xAI)
- * @date March 05, 2025
+ * @author Tugbars Heptaskin
+ * @date March 06, 2025
  */
 
 /**

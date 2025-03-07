@@ -224,11 +224,11 @@ void print_real(fft_type *data, int length, const char *label) {
     printf("\n");
 }
 
-// Function to free real FFT object
-void free_fft_real(fft_real_object obj) {
-    if (obj) {
-        free_fft(obj->cobj); // Free the nested complex FFT object
-        free(obj);           // Free the real FFT object itself
+void free_real_fft(fft_real_object real_obj) {
+    // Code to free the real FFT object, e.g., freeing memory allocated for real_obj
+    if (real_obj != NULL) {
+        free(real_obj->cobj);  // Example: freeing the underlying complex FFT object
+        free(real_obj);        // Freeing the real FFT object itself
     }
 }
 
@@ -342,7 +342,7 @@ int main() {
         fft_real_object c2r = fft_real_init(N, -1);
         if (!c2r) {
             fprintf(stderr, "Real IFFT initialization failed for N = %d\n", N);
-            free_fft_real(r2c); free(real_input); free(complex_output); free(real_inverse);
+            free_real_fft(r2c); free(real_input); free(complex_output); free(real_inverse);
             continue;
         }
         fft_c2r_exec(c2r, complex_output, real_inverse);
@@ -363,8 +363,8 @@ int main() {
         }
 
         // Cleanup
-        free_fft_real(r2c);
-        free_fft_real(c2r);
+        free_real_fft(r2c);
+        free_real_fft(c2r);
         free(real_input);
         free(complex_output);
         free(real_inverse);

@@ -1555,42 +1555,31 @@ static void bluestein_exp(fft_data *hl, fft_data *hlt, int input_length, int pad
 /**
  * @brief Performs Bluestein’s FFT algorithm for arbitrary-length signals.
  *
- * Computes the Fast Fourier Transform (FFT) for any signal length \( N \), even when \( N \) is not a power of 2 or
- * factorable into small primes (e.g., 15, 7). This algorithm transforms the DFT into a convolution problem by
- * applying a "chirp" sequence, padding the result to a power-of-2 length \( M \), and using efficient FFT-based
- * convolution to compute the transform. It serves as a fallback when mixed-radix decomposition is impractical.
+ * Uses Bluestein’s chirp z-transform to compute the Fast Fourier Transform (FFT) for non-power-of-2 signal lengths.
+ * This algorithm transforms the DFT of length \(N\) into a convolution of the input signal with a chirp sequence,
+ * padded to a power-of-2 length for efficient computation using a standard FFT. It requires precomputed exponential
+ * (chirp) terms and an FFT object initialized for the padded length to handle arbitrary \(N\) efficiently.
  *
  * @param[in] input_data Input signal data (length N).
- *                      Array of complex numbers (real and imaginary parts) representing the input sequence to transform.
+ *                      The real and imaginary components of the input signal to be transformed.
  * @param[out] output_data Output FFT results (length N).
- *                       Stores the transformed complex values, representing frequency components.
- * @param[in,out] fft_obj FFT configuration object.
- *                       Contains signal length, transform direction, and twiddle factors; temporarily modified for padded length \( M \).
+ *                       Stores the transformed complex values after applying Bluestein’s FFT.
+ * @param[in] fft_obj FFT configuration object.
+ *                   Contains the signal length, transform direction, prime factors, and precomputed twiddle factors,
+ *                   temporarily modified for the padded length during computation.
  * @param[in] transform_direction Direction of the transform (+1 for forward, -1 for inverse).
- *                             Determines whether to compute forward FFT (\( e^{-2\pi i k n / N} \)) or inverse FFT (\( e^{+2\pi i k n / N} \)).
+ *                             Determines whether to perform a forward FFT (\(e^{-2\pi i k n / N}\)) or
+ *                             inverse FFT (\(e^{+2\pi i k n / N}\)).
  * @param[in] signal_length Length of the input signal (N > 0).
- *                        Number of elements in the input and output arrays.
- *
- * @par Algorithm Overview
- * Bluestein simplifies arbitrary-length FFTs by:
- * -# **Chirp Multiplication**: Multiplies the input \( x(n) \) by a chirp sequence \( h^*(n) = e^{-\pi i n^2 / N} \) (or \( h(n) \) for inverse).
- * -# **Padding**: Extends the result to a power-of-2 length \( M \geq 2N-1 \) with zeros for efficient FFT processing.
- * -# **FFT Convolution**: Computes the FFT of the padded sequence and the chirp, multiplies them, and applies an inverse FFT.
- * -# **Final Adjustment**: Multiplies the result by \( h^*(k) \) and extracts the first \( N \) elements to get \( X(k) \).
- *
- * @par Example
- * For \( N = 3 \), input \( [1, 2, 3] \):
- * - Chirp: \( [1, e^{i\pi/3}, e^{i4\pi/3}] \) (simplified).
- * - Multiply: \( [1, 2 \cdot e^{-i\pi/3}, 3 \cdot e^{-i4\pi/3}] \).
- * - Pad to \( M = 8 \): \( [..., 0, 0, 0, 0, 0] \).
- * - FFT, multiply by chirp’s FFT, inverse FFT, adjust with chirp, output \( X[0], X[1], X[2] \).
- *
- * @warning If memory allocation fails or signal_length is invalid (\( \leq 0 \)), the function exits with an error message to stderr.
- * @note Temporarily modifies fft_obj (length, type, twiddle factors) for the padded length \( M \), restoring it afterward.
- *       Uses power-of-2 FFTs internally via `fft_exec`, leveraging `mixed_radix_dit_rec` for efficiency.
- *       Complexity is \( O(M \log M) \) where \( M \approx 2N \), slower than radix-based FFT but universally applicable.
- * @see bluestein_exp For chirp sequence generation.
- * @see fft_exec For internal FFT computations.
+ *                        The size of the input and output data, which must be positive.
+ * @warning If memory allocation fails or signal_length is invalid (<= 0), the function exits with an error.
+ * @note Temporarily modifies the FFT object’s configuration (length, algorithm type, and twiddle factors) for the
+ *       padded length, restoring the original state afterward. The algorithm uses a chirp z-transform,
+ *       padding the input to a power-of-2 length (or larger if needed) and performing two FFTs and a pointwise
+ *       multiplication to compute the DFT of arbitrary length \(N\).
+ *       Mathematically, Bluestein’s FFT leverages the identity \(X(k) = \sum_{n=0}^{N-1} x(n) \cdot e^{-2\pi i k n / N}\)
+ *       by transforming it into a convolution with a chirp sequence \(h(n) = e^{\pi i n^2 / N}\), enabling efficient
+ *       computation via FFT-based convolution.
  */
 static void bluestein_fft(fft_data *input_data, fft_data *output_data, fft_object fft_obj, int transform_direction, int signal_length) {
     /**
@@ -2021,127 +2010,3 @@ void free_fft(fft_object object) {
 	free(object);
 }
 
-
-// Utility to print complex data
-void print_complex(fft_data *data, int length, const char *label) {
-    printf("%s:\n", label);
-    for (int i = 0; i < length; i++) {
-        printf("  [%d] %.6f + %.6fi\n", i, data[i].re, data[i].im);
-    }
-    printf("\n");
-}
-
-// Generate a test signal (sine wave + noise)
-void generate_signal(fft_data *signal, int length, double freq, double amplitude) {
-    for (int i = 0; i < length; i++) {
-        signal[i].re = amplitude * sin(2.0 * M_PI * freq * i / length);
-        signal[i].im = 0.0; // Real-valued input
-    }
-}
-
-// Verify inverse FFT by comparing with original signal
-double compute_mse(fft_data *original, fft_data *reconstructed, int length) {
-    double mse = 0.0;
-    for (int i = 0; i < length; i++) {
-        double diff_re = original[i].re - reconstructed[i].re;
-        double diff_im = original[i].im - reconstructed[i].im;
-        mse += diff_re * diff_re + diff_im * diff_im;
-    }
-    return mse / length;
-}
-
-int main() {
-    // Test cases: power-of-2 (mixed-radix) and arbitrary sizes (Bluestein)
-    int lengths[] = {4, 8, 15, 20, 64}; // Mixed-radix: 4, 8, 64; Bluestein: 15, 20
-    int num_tests = sizeof(lengths) / sizeof(lengths[0]);
-    const double freq = 2.0; // Frequency of test signal (cycles per signal length)
-    const double amplitude = 1.0;
-
-    for (int test = 0; test < num_tests; test++) {
-        int N = lengths[test];
-        printf("=== Testing FFT with N = %d ===\n", N);
-
-        // Allocate memory for input, output, and inverse output
-        fft_data *input = (fft_data *)malloc(N * sizeof(fft_data));
-        fft_data *output = (fft_data *)malloc(N * sizeof(fft_data));
-        fft_data *inverse = (fft_data *)malloc(N * sizeof(fft_data));
-        if (!input || !output || !inverse) {
-            fprintf(stderr, "Memory allocation failed for N = %d\n", N);
-            free(input); free(output); free(inverse);
-            return EXIT_FAILURE;
-        }
-
-        // Generate test signal
-        generate_signal(input, N, freq, amplitude);
-
-        // In main, before and after fft_init:
-        fft_object fft = fft_init(N, 1);
-      
-        if (!fft) {
-            fprintf(stderr, "FFT initialization failed for N = %d\n", N);
-            free(input); free(output); free(inverse);
-            return EXIT_FAILURE;
-        }
-        
-        
-        // Perform forward FFT
-        fft_exec(fft, input, output);
-        printf("Forward FFT (%s):\n", fft->lt == 0 ? "Mixed-Radix" : "Bluestein");
-        print_complex(output, N, "FFT Output");
-        
-         clock_t start = clock();
-        // Initialize inverse FFT object
-        fft_object ifft = fft_init(N, -1); // Inverse FFT
-        if (!ifft) {
-            fprintf(stderr, "Inverse FFT initialization failed for N = %d\n", N);
-            free_fft(fft); free(input); free(output); free(inverse);
-            return EXIT_FAILURE;
-        }
-        
-       
-        // Perform inverse FFT
-        fft_exec(ifft, output, inverse);
-
-        // Scale inverse output (since this implementation doesn't normalize)
-        for (int i = 0; i < N; i++) {
-            inverse[i].re /= N;
-            inverse[i].im /= N;
-        }
-        clock_t end = clock();
-          printf("FFT time: %.6f seconds\n", (double)(end - start) / CLOCKS_PER_SEC);
-
-        print_complex(inverse, N, "Inverse FFT Output");
-
-        // Compute Mean Squared Error to verify correctness
-        double mse = compute_mse(input, inverse, N);
-        printf("Mean Squared Error (original vs. inverse): %.6e\n", mse);
-        if (mse > 1e-10) {
-            printf("Warning: MSE exceeds tolerance for N = %d\n", N);
-        } else {
-            printf("Test passed for N = %d\n", N);
-        }
-
-        // Cleanup
-        free_fft(fft);
-        free_fft(ifft);
-        free(input);
-        free(output);
-        free(inverse);
-
-        printf("\n");
-    }
-
-    // Test error handling
-    printf("=== Testing Error Handling ===\n");
-    fft_object bad_fft = fft_init(0, 1); // Invalid length
-    if (!bad_fft) {
-        printf("Correctly handled invalid signal length (0)\n");
-    }
-
-    bad_fft = fft_init(8, 0); // Invalid direction
-    if (!bad_fft) {
-        printf("Correctly handled invalid transform direction (0)\n");
-    }
-
-    return EXIT_SUCCESS;
-}

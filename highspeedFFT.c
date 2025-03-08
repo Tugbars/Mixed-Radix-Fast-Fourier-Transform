@@ -15,39 +15,48 @@ static const int num_primes = sizeof(primes) / sizeof(primes[0]);
 static unsigned char dividebyN_lookup[LOOKUP_MAX]; // 0 = not divisible, 1 = divisible
 
 // Initialize the lookup table at compile time or runtime
-__attribute__((constructor)) static void init_dividebyN_lookup(void) {
+__attribute__((constructor)) static void init_dividebyN_lookup(void)
+{
     // Set all to 0 initially (not divisible)
-    for (int i = 0; i < LOOKUP_MAX; i++) {
+    for (int i = 0; i < LOOKUP_MAX; i++)
+    {
         dividebyN_lookup[i] = 0;
     }
     dividebyN_lookup[1] = 1; // Special case: 1 is "divisible" (no factors needed)
 
     // Mark numbers divisible by the primes
-    for (int n = 2; n < LOOKUP_MAX; n++) {
+    for (int n = 2; n < LOOKUP_MAX; n++)
+    {
         int temp = n;
         int divisible = 1;
-        while (temp > 1) {
+        while (temp > 1)
+        {
             int factored = 0;
-            for (int j = 0; j < num_primes; j++) {
-                if (temp % primes[j] == 0) {
+            for (int j = 0; j < num_primes; j++)
+            {
+                if (temp % primes[j] == 0)
+                {
                     temp /= primes[j];
                     factored = 1;
                     break;
                 }
             }
-            if (!factored) {
+            if (!factored)
+            {
                 divisible = 0;
                 break;
             }
         }
-        if (divisible) {
+        if (divisible)
+        {
             dividebyN_lookup[n] = 1;
         }
     }
 }
 
 // Precomputed twiddle factor tables for common radices
-typedef struct {
+typedef struct
+{
     double re;
     double im;
 } complex_t;
@@ -55,59 +64,55 @@ typedef struct {
 static const complex_t twiddle_radix2[] = {{1.0, 0.0}, {0.0, -1.0}};
 static const complex_t twiddle_radix3[] = {{1.0, 0.0}, {-0.5, -0.86602540378}, {-0.5, 0.86602540378}};
 static const complex_t twiddle_radix4[] = {{1.0, 0.0}, {0.0, -1.0}, {-1.0, 0.0}, {0.0, 1.0}};
-static const complex_t twiddle_radix5[] = {{1.0, 0.0}, {0.30901699437, -0.95105651629}, {-0.80901699437, -0.58778525229},
-                                          {-0.80901699437, 0.58778525229}, {0.30901699437, 0.95105651629}};
-static const complex_t twiddle_radix7[] = {{1.0, 0.0}, {0.62348980185, -0.78183148246}, {-0.22252093395, -0.97492791218},
-                                          {-0.9009688679, -0.43388373911}, {-0.9009688679, 0.43388373911},
-                                          {-0.22252093395, 0.97492791218}, {0.62348980185, 0.78183148246}};
-static const complex_t twiddle_radix8[] = {{1.0, 0.0}, {0.70710678118, -0.70710678118}, {0.0, -1.0}, {-0.70710678118, -0.70710678118},
-                                          {-1.0, 0.0}, {-0.70710678118, 0.70710678118}, {0.0, 1.0}, {0.70710678118, 0.70710678118}};
+static const complex_t twiddle_radix5[] = {{1.0, 0.0}, {0.30901699437, -0.95105651629}, {-0.80901699437, -0.58778525229}, {-0.80901699437, 0.58778525229}, {0.30901699437, 0.95105651629}};
+static const complex_t twiddle_radix7[] = {{1.0, 0.0}, {0.62348980185, -0.78183148246}, {-0.22252093395, -0.97492791218}, {-0.9009688679, -0.43388373911}, {-0.9009688679, 0.43388373911}, {-0.22252093395, 0.97492791218}, {0.62348980185, 0.78183148246}};
+static const complex_t twiddle_radix8[] = {{1.0, 0.0}, {0.70710678118, -0.70710678118}, {0.0, -1.0}, {-0.70710678118, -0.70710678118}, {-1.0, 0.0}, {-0.70710678118, 0.70710678118}, {0.0, 1.0}, {0.70710678118, 0.70710678118}};
 
 static const complex_t twiddle_radix11[] = {
-    {1.0, 0.0},                // k=0
-    {0.8412535328311812, -0.5406408174555976},  // k=1
-    {0.4154150130018864, -0.9096319953545184},  // k=2
+    {1.0, 0.0},                                  // k=0
+    {0.8412535328311812, -0.5406408174555976},   // k=1
+    {0.4154150130018864, -0.9096319953545184},   // k=2
     {-0.14231483827328514, -0.9898214418809327}, // k=3
-    {-0.654860733945285, -0.7557495743542583},  // k=4
+    {-0.654860733945285, -0.7557495743542583},   // k=4
     {-0.9594929736144974, -0.28173255684142967}, // k=5
-    {-0.9594929736144974, 0.28173255684142967}, // k=6
-    {-0.654860733945285, 0.7557495743542583},   // k=7
-    {-0.14231483827328514, 0.9898214418809327}, // k=8
-    {0.4154150130018864, 0.9096319953545184},   // k=9
-    {0.8412535328311812, 0.5406408174555976}    // k=10
+    {-0.9594929736144974, 0.28173255684142967},  // k=6
+    {-0.654860733945285, 0.7557495743542583},    // k=7
+    {-0.14231483827328514, 0.9898214418809327},  // k=8
+    {0.4154150130018864, 0.9096319953545184},    // k=9
+    {0.8412535328311812, 0.5406408174555976}     // k=10
 };
 
 static const complex_t twiddle_radix13[] = {
-    {1.0, 0.0},                // k=0
-    {0.8854560256532099, -0.46472317204376856},  // k=1
-    {0.5680647467311558, -0.8229838658936564},   // k=2
-    {0.12053668025532305, -0.992708874098054},   // k=3
-    {-0.3546048870425356, -0.9350162426854148},  // k=4
-    {-0.7485107481711011, -0.6631226582407952},  // k=5
-    {-0.970941817426052, -0.23931566428755774},  // k=6
-    {-0.970941817426052, 0.23931566428755774},   // k=7
-    {-0.7485107481711011, 0.6631226582407952},   // k=8
-    {-0.3546048870425356, 0.9350162426854148},   // k=9
-    {0.12053668025532305, 0.992708874098054},    // k=10
-    {0.5680647467311558, 0.8229838658936564},    // k=11
-    {0.8854560256532099, 0.46472317204376856}    // k=12
+    {1.0, 0.0},                                 // k=0
+    {0.8854560256532099, -0.46472317204376856}, // k=1
+    {0.5680647467311558, -0.8229838658936564},  // k=2
+    {0.12053668025532305, -0.992708874098054},  // k=3
+    {-0.3546048870425356, -0.9350162426854148}, // k=4
+    {-0.7485107481711011, -0.6631226582407952}, // k=5
+    {-0.970941817426052, -0.23931566428755774}, // k=6
+    {-0.970941817426052, 0.23931566428755774},  // k=7
+    {-0.7485107481711011, 0.6631226582407952},  // k=8
+    {-0.3546048870425356, 0.9350162426854148},  // k=9
+    {0.12053668025532305, 0.992708874098054},   // k=10
+    {0.5680647467311558, 0.8229838658936564},   // k=11
+    {0.8854560256532099, 0.46472317204376856}   // k=12
 };
 
 // Update the twiddle_tables array to include new radices
 static const complex_t *twiddle_tables[] = {
-    NULL,           // Radix 0 (unused)
-    twiddle_radix2, // Radix 2
-    twiddle_radix3, // Radix 3
-    twiddle_radix4, // Radix 4
-    twiddle_radix5, // Radix 5
-    NULL,           // Radix 6 (no table)
-    twiddle_radix7, // Radix 7
-    twiddle_radix8, // Radix 8
-    NULL,           // Radix 9 (no table)
-    NULL,           // Radix 10 (no table)
-    twiddle_radix11,// Radix 11
-    NULL,           // Radix 12 (no table)
-    twiddle_radix13 // Radix 13
+    NULL,            // Radix 0 (unused)
+    twiddle_radix2,  // Radix 2
+    twiddle_radix3,  // Radix 3
+    twiddle_radix4,  // Radix 4
+    twiddle_radix5,  // Radix 5
+    NULL,            // Radix 6 (no table)
+    twiddle_radix7,  // Radix 7
+    twiddle_radix8,  // Radix 8
+    NULL,            // Radix 9 (no table)
+    NULL,            // Radix 10 (no table)
+    twiddle_radix11, // Radix 11
+    NULL,            // Radix 12 (no table)
+    twiddle_radix13  // Radix 13
 };
 
 /**
@@ -142,38 +147,45 @@ static int chirp_initialized = 0;
  * Computes chirp sequences h(n) = e^(πi n^2 / N) for a select set of N values using high-precision math.
  * Runs automatically before main() due to the constructor attribute.
  */
-__attribute__((constructor)) static void init_bluestein_chirp(void) {
-    if (chirp_initialized) return; // Prevent re-initialization
+__attribute__((constructor)) static void init_bluestein_chirp(void)
+{
+    if (chirp_initialized)
+        return; // Prevent re-initialization
 
     int sizes[] = {1, 2, 3, 4, 5, 7, 15, 20, 31, 64}; // Precompute sizes including 64 for test case
     num_precomputed = sizeof(sizes) / sizeof(sizes[0]);
-    
+
     bluestein_chirp = malloc(num_precomputed * sizeof(fft_data *));
     chirp_sizes = malloc(num_precomputed * sizeof(int));
-    if (!bluestein_chirp || !chirp_sizes) {
+    if (!bluestein_chirp || !chirp_sizes)
+    {
         fprintf(stderr, "Error: Memory allocation failed for Bluestein chirp table\n");
         exit(EXIT_FAILURE);
     }
 
-    for (int idx = 0; idx < num_precomputed; idx++) {
+    for (int idx = 0; idx < num_precomputed; idx++)
+    {
         int n = sizes[idx];
         chirp_sizes[idx] = n;
         bluestein_chirp[idx] = malloc(n * sizeof(fft_data));
-        if (!bluestein_chirp[idx]) {
+        if (!bluestein_chirp[idx])
+        {
             fprintf(stderr, "Error: Memory allocation failed for chirp size %d\n", n);
             exit(EXIT_FAILURE);
         }
         fft_type theta = M_PI / n; // Base angle step: π/N
         int l2 = 0, len2 = 2 * n;  // Quadratic index and wrap-around limit
-        for (int i = 0; i < n; i++) {
-            fft_type angle = theta * l2; // Angle: π * n^2 / N
+        for (int i = 0; i < n; i++)
+        {
+            fft_type angle = theta * l2;             // Angle: π * n^2 / N
             bluestein_chirp[idx][i].re = cos(angle); // Real part
             bluestein_chirp[idx][i].im = sin(angle); // Imaginary part
-            l2 += 2 * i + 1;               // Quadratic term: n^2 mod 2N
-            while (l2 > len2) l2 -= len2;  // Wrap around modulo 2N
+            l2 += 2 * i + 1;                         // Quadratic term: n^2 mod 2N
+            while (l2 > len2)
+                l2 -= len2; // Wrap around modulo 2N
         }
     }
-    chirp_initialized = 1; 
+    chirp_initialized = 1;
 }
 
 /**
@@ -191,7 +203,8 @@ __attribute__((constructor)) static void init_bluestein_chirp(void) {
  *       for freeing this memory with `free_fft`. Twiddle factors are adjusted for inverse transforms by negating their
  *       imaginary components.
  */
-fft_object fft_init(int signal_length, int transform_direction) {
+fft_object fft_init(int signal_length, int transform_direction)
+{
     fft_object fft_config = NULL; // Pointer to the FFT configuration object
     int twiddle_count;            // Number of twiddle factors to compute
     int is_factorable;            // Flag indicating if signal_length is factorable by supported primes
@@ -199,11 +212,13 @@ fft_object fft_init(int signal_length, int transform_direction) {
     // Check if the signal length can be factored into supported primes (mixed-radix case)
     is_factorable = dividebyN(signal_length);
 
-    if (is_factorable) {
+    if (is_factorable)
+    {
         // Mixed-radix FFT: Signal length is a product of supported primes (e.g., 2, 3, 4, 5, 7, 8)
         // Allocate memory for the fft_set structure plus (N-1) twiddle factors
         fft_config = (fft_object)malloc(sizeof(struct fft_set) + sizeof(fft_data) * (signal_length - 1));
-        if (fft_config == NULL) {
+        if (fft_config == NULL)
+        {
             return NULL; // Memory allocation failed
         }
 
@@ -216,24 +231,30 @@ fft_object fft_init(int signal_length, int transform_direction) {
         // Set twiddle count and algorithm type
         twiddle_count = signal_length;
         fft_config->lt = 0; // 0 indicates mixed-radix algorithm
-    } else {
+    }
+    else
+    {
         // Bluestein’s algorithm: Signal length is not factorable, requires padding to a power of 2
-        int next_power_of_2;       // Smallest power of 2 >= N for initial estimation
-        int padded_length;         // Final padded length for Bluestein’s convolution
+        int next_power_of_2; // Smallest power of 2 >= N for initial estimation
+        int padded_length;   // Final padded length for Bluestein’s convolution
 
         // Estimate the next power of 2 using log10 for simplicity (log2 would be more precise)
         next_power_of_2 = (int)pow(2.0, ceil(log10(signal_length) / log10(2.0)));
 
         // Ensure padded length is sufficient for Bluestein’s convolution (at least 2N-1)
-        if (next_power_of_2 < 2 * signal_length - 2) {
+        if (next_power_of_2 < 2 * signal_length - 2)
+        {
             padded_length = next_power_of_2 * 2; // Double to ensure enough space
-        } else {
-            padded_length = next_power_of_2;     // Already sufficient
+        }
+        else
+        {
+            padded_length = next_power_of_2; // Already sufficient
         }
 
         // Allocate memory for the fft_set structure plus (M-1) twiddle factors
         fft_config = (fft_object)malloc(sizeof(struct fft_set) + sizeof(fft_data) * (padded_length - 1));
-        if (fft_config == NULL) {
+        if (fft_config == NULL)
+        {
             return NULL; // Memory allocation failed
         }
 
@@ -253,15 +274,16 @@ fft_object fft_init(int signal_length, int transform_direction) {
     fft_config->sgn = transform_direction;
 
     // Adjust twiddle factors for inverse FFT by negating imaginary parts
-    if (transform_direction == -1) {
-        for (int i = 0; i < twiddle_count; i++) {
+    if (transform_direction == -1)
+    {
+        for (int i = 0; i < twiddle_count; i++)
+        {
             fft_config->twiddle[i].im = -fft_config->twiddle[i].im;
         }
     }
 
     return fft_config;
 }
-
 
 /**
  * @brief Performs recursive mixed-radix decimation-in-time (DIT) FFT on the input data.
@@ -293,18 +315,22 @@ fft_object fft_init(int signal_length, int transform_direction) {
  *       Mathematically, the FFT computes \(X(k) = \sum_{n=0}^{N-1} x(n) \cdot e^{-2\pi i k n / N}\) for forward transforms,
  *       leveraging the divide-and-conquer strategy to reduce complexity from O(N^2) to O(N log N).
  */
-static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer, const fft_object fft_obj, int transform_sign, int data_length, int stride, int factor_index) {
-    if (data_length <= 0 || stride <= 0 || factor_index < 0) {
+static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer, const fft_object fft_obj, int transform_sign, int data_length, int stride, int factor_index)
+{
+    if (data_length <= 0 || stride <= 0 || factor_index < 0)
+    {
         fprintf(stderr, "Error: Invalid mixed-radix FFT inputs - data_length: %d, stride: %d, factor_index: %d\n", data_length, stride, factor_index);
         exit(EXIT_FAILURE);
     }
 
     int radix, sub_length, new_stride;
-    if (data_length > 1) {
+    if (data_length > 1)
+    {
         radix = fft_obj->factors[factor_index];
     }
 
-    if (data_length == 1) {
+    if (data_length == 1)
+    {
         /**
          * @brief Base case for recursion: copy a single element.
          *
@@ -314,7 +340,9 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
          */
         output_buffer[0].re = input_buffer[0].re;
         output_buffer[0].im = input_buffer[0].im;
-    } else if (data_length == 2) {
+    }
+    else if (data_length == 2)
+    {
         /**
          * @brief Radix-2 butterfly operation for two-point FFT.
          *
@@ -334,7 +362,9 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
         output_buffer[0].im = tau1i + output_buffer[1].im;
         output_buffer[1].re = tau1r - output_buffer[1].re;
         output_buffer[1].im = tau1i - output_buffer[1].im;
-    } else if (data_length == 3) {
+    }
+    else if (data_length == 3)
+    {
         /**
          * @brief Radix-3 butterfly operation for three-point FFT.
          *
@@ -354,20 +384,22 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
         output_buffer[2].re = input_buffer[2 * stride].re;
         output_buffer[2].im = input_buffer[2 * stride].im;
 
-        tau0r = output_buffer[1].re + output_buffer[2].re; // Sum of second and third points (real)
-        tau0i = output_buffer[1].im + output_buffer[2].im; // Sum of second and third points (imag)
+        tau0r = output_buffer[1].re + output_buffer[2].re;                                 // Sum of second and third points (real)
+        tau0i = output_buffer[1].im + output_buffer[2].im;                                 // Sum of second and third points (imag)
         tau1r = transform_sign * sqrt3_by_2 * (output_buffer[1].re - output_buffer[2].re); // Rotated difference (real)
         tau1i = transform_sign * sqrt3_by_2 * (output_buffer[1].im - output_buffer[2].im); // Rotated difference (imag)
-        tau2r = output_buffer[0].re - tau0r * 0.5; // Center point adjustment (real)
-        tau2i = output_buffer[0].im - tau0i * 0.5; // Center point adjustment (imag)
+        tau2r = output_buffer[0].re - tau0r * 0.5;                                         // Center point adjustment (real)
+        tau2i = output_buffer[0].im - tau0i * 0.5;                                         // Center point adjustment (imag)
 
         output_buffer[0].re = tau0r + output_buffer[0].re; // Combine with first point (real)
         output_buffer[0].im = tau0i + output_buffer[0].im; // Combine with first point (imag)
-        output_buffer[1].re = tau2r + tau1i; // Apply rotation for second output (real)
-        output_buffer[1].im = tau2i - tau1r; // Apply rotation for second output (imag)
-        output_buffer[2].re = tau2r - tau1i; // Apply rotation for third output (real)
-        output_buffer[2].im = tau2i + tau1r; // Apply rotation for third output (imag)
-    } else if (data_length == 4) {
+        output_buffer[1].re = tau2r + tau1i;               // Apply rotation for second output (real)
+        output_buffer[1].im = tau2i - tau1r;               // Apply rotation for second output (imag)
+        output_buffer[2].re = tau2r - tau1i;               // Apply rotation for third output (real)
+        output_buffer[2].im = tau2i + tau1r;               // Apply rotation for third output (imag)
+    }
+    else if (data_length == 4)
+    {
         /**
          * @brief Radix-4 butterfly operation for four-point FFT.
          *
@@ -388,12 +420,12 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
         output_buffer[3].re = input_buffer[3 * stride].re;
         output_buffer[3].im = input_buffer[3 * stride].im;
 
-        tau0r = output_buffer[0].re + output_buffer[2].re; // Sum of first and third points (real)
-        tau0i = output_buffer[0].im + output_buffer[2].im; // Sum of first and third points (imag)
-        tau1r = output_buffer[0].re - output_buffer[2].re; // Difference of first and third points (real)
-        tau1i = output_buffer[0].im - output_buffer[2].im; // Difference of first and third points (imag)
-        tau2r = output_buffer[1].re + output_buffer[3].re; // Sum of second and fourth points (real)
-        tau2i = output_buffer[1].im + output_buffer[3].im; // Sum of second and fourth points (imag)
+        tau0r = output_buffer[0].re + output_buffer[2].re;                    // Sum of first and third points (real)
+        tau0i = output_buffer[0].im + output_buffer[2].im;                    // Sum of first and third points (imag)
+        tau1r = output_buffer[0].re - output_buffer[2].re;                    // Difference of first and third points (real)
+        tau1i = output_buffer[0].im - output_buffer[2].im;                    // Difference of first and third points (imag)
+        tau2r = output_buffer[1].re + output_buffer[3].re;                    // Sum of second and fourth points (real)
+        tau2i = output_buffer[1].im + output_buffer[3].im;                    // Sum of second and fourth points (imag)
         tau3r = transform_sign * (output_buffer[1].re - output_buffer[3].re); // Rotated difference (real)
         tau3i = transform_sign * (output_buffer[1].im - output_buffer[3].im); // Rotated difference (imag)
 
@@ -405,7 +437,9 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
         output_buffer[2].im = tau0i - tau2i; // Combine differences for third output (imag)
         output_buffer[3].re = tau1r - tau3i; // Apply rotation for fourth output (real)
         output_buffer[3].im = tau1i + tau3r; // Apply rotation for fourth output (imag)
-    } else if (data_length == 5) {
+    }
+    else if (data_length == 5)
+    {
         /**
          * @brief Radix-5 butterfly operation for five-point FFT.
          *
@@ -440,10 +474,13 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
 
         tau4r = c1 * tau0r + c2 * tau1r; // Apply 72° rotation (real)
         tau4i = c1 * tau0i + c2 * tau1i; // Apply 72° rotation (imag)
-        if (transform_sign == 1) {
+        if (transform_sign == 1)
+        {
             tau5r = s1 * tau2r + s2 * tau3r; // Apply 144° rotation (real, forward)
             tau5i = s1 * tau2i + s2 * tau3i; // Apply 144° rotation (imag, forward)
-        } else {
+        }
+        else
+        {
             tau5r = -s1 * tau2r - s2 * tau3r; // Apply 144° rotation (real, inverse)
             tau5i = -s1 * tau2i - s2 * tau3i; // Apply 144° rotation (imag, inverse)
         }
@@ -457,10 +494,13 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
 
         tau4r = c2 * tau0r + c1 * tau1r; // Apply 144° rotation (real)
         tau4i = c2 * tau0i + c1 * tau1i; // Apply 144° rotation (imag)
-        if (transform_sign == 1) {
+        if (transform_sign == 1)
+        {
             tau5r = s2 * tau2r - s1 * tau3r; // Apply 72° rotation (real, forward)
             tau5i = s2 * tau2i - s1 * tau3i; // Apply 72° rotation (imag, forward)
-        } else {
+        }
+        else
+        {
             tau5r = -s2 * tau2r + s1 * tau3r; // Apply 72° rotation (real, inverse)
             tau5i = -s2 * tau2i + s1 * tau3i; // Apply 72° rotation (imag, inverse)
         }
@@ -474,7 +514,9 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
 
         output_buffer[0].re += tau0r + tau1r; // Update center point (real)
         output_buffer[0].im += tau0i + tau1i; // Update center point (imag)
-    } else if (data_length == 7) {
+    }
+    else if (data_length == 7)
+    {
         /**
          * @brief Radix-7 butterfly operation for seven-point FFT.
          *
@@ -488,7 +530,8 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
         const fft_type c1 = 0.62348980185, c2 = -0.22252093395, c3 = -0.9009688679, s1 = 0.78183148246, s2 = 0.97492791218, s3 = 0.43388373911; // cos/sin of 51.43°, 102.86°, 154.29°
 
         // Copy input to output (7 points), ensuring all input values are loaded for processing
-        for (int i = 0; i < 7; i++) {
+        for (int i = 0; i < 7; i++)
+        {
             output_buffer[i].re = input_buffer[i * stride].re; // Load real part
             output_buffer[i].im = input_buffer[i * stride].im; // Load imaginary part
         }
@@ -510,10 +553,13 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
 
         tau6r = output_buffer[0].re + c1 * tau0r + c2 * tau1r + c3 * tau2r; // Combine with center, apply 51.43° rotation (real)
         tau6i = output_buffer[0].im + c1 * tau0i + c2 * tau1i + c3 * tau2i; // Combine with center, apply 51.43° rotation (imag)
-        if (transform_sign == 1) {
+        if (transform_sign == 1)
+        {
             tau7r = -s1 * tau3r - s2 * tau4r - s3 * tau5r; // Apply rotations for forward transform (real)
             tau7i = -s1 * tau3i - s2 * tau4i - s3 * tau5i; // Apply rotations for forward transform (imag)
-        } else {
+        }
+        else
+        {
             tau7r = s1 * tau3r + s2 * tau4r + s3 * tau5r; // Apply rotations for inverse transform (real)
             tau7i = s1 * tau3i + s2 * tau4i + s3 * tau5i; // Apply rotations for inverse transform (imag)
         }
@@ -525,10 +571,13 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
 
         tau6r = output_buffer[0].re + c2 * tau0r + c3 * tau1r + c1 * tau2r; // Combine with center, apply 102.86° rotation (real)
         tau6i = output_buffer[0].im + c2 * tau0i + c3 * tau1i + c1 * tau2i; // Combine with center, apply 102.86° rotation (imag)
-        if (transform_sign == 1) {
+        if (transform_sign == 1)
+        {
             tau7r = -s2 * tau3r + s3 * tau4r + s1 * tau5r; // Apply rotations for forward transform (real)
             tau7i = -s2 * tau3i + s3 * tau4i + s1 * tau5i; // Apply rotations for forward transform (imag)
-        } else {
+        }
+        else
+        {
             tau7r = s2 * tau3r - s3 * tau4r - s1 * tau5r; // Apply rotations for inverse transform (real)
             tau7i = s2 * tau3i - s3 * tau4i - s1 * tau5i; // Apply rotations for inverse transform (imag)
         }
@@ -540,10 +589,13 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
 
         tau6r = output_buffer[0].re + c3 * tau0r + c1 * tau1r + c2 * tau2r; // Combine with center, apply 154.29° rotation (real)
         tau6i = output_buffer[0].im + c3 * tau0i + c1 * tau1i + c2 * tau2i; // Combine with center, apply 154.29° rotation (imag)
-        if (transform_sign == 1) {
+        if (transform_sign == 1)
+        {
             tau7r = -s3 * tau3r + s1 * tau4r - s2 * tau5r; // Apply rotations for forward transform (real)
             tau7i = -s3 * tau3i + s1 * tau4i - s2 * tau5i; // Apply rotations for forward transform (imag)
-        } else {
+        }
+        else
+        {
             tau7r = s3 * tau3r - s1 * tau4r + s2 * tau5r; // Apply rotations for inverse transform (real)
             tau7i = s3 * tau3i - s1 * tau4i + s2 * tau5i; // Apply rotations for inverse transform (imag)
         }
@@ -555,7 +607,9 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
 
         output_buffer[0].re += tau0r + tau1r + tau2r; // Update center point (real)
         output_buffer[0].im += tau0i + tau1i + tau2i; // Update center point (imag)
-    } else if (data_length == 8) {
+    }
+    else if (data_length == 8)
+    {
         /**
          * @brief Radix-8 butterfly operation for eight-point FFT.
          *
@@ -569,7 +623,8 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
         const fft_type c1 = 0.70710678118654752440084436210485, s1 = c1; // sqrt(2)/2, approximately 0.707, used for 45° rotation
 
         // Copy input to output (8 points), ensuring all input values are loaded for processing
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 8; i++)
+        {
             output_buffer[i].re = input_buffer[i * stride].re; // Load real part
             output_buffer[i].im = input_buffer[i * stride].im; // Load imaginary part
         }
@@ -604,10 +659,13 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
 
         tau8r = tau4r + c1 * temp1r; // Apply 45° rotation (real)
         tau8i = tau4i + c1 * temp1i; // Apply 45° rotation (imag)
-        if (transform_sign == 1) {
+        if (transform_sign == 1)
+        {
             tau9r = -s1 * temp2r - tau7r; // Apply 45° rotation for forward transform (real)
             tau9i = -s1 * temp2i - tau7i; // Apply 45° rotation for forward transform (imag)
-        } else {
+        }
+        else
+        {
             tau9r = s1 * temp2r + tau7r; // Apply 45° rotation for inverse transform (real)
             tau9i = s1 * temp2i + tau7i; // Apply 45° rotation for inverse transform (imag)
         }
@@ -619,10 +677,13 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
 
         tau8r = tau0r - tau3r; // Difference for third output (real)
         tau8i = tau0i - tau3i; // Difference for third output (imag)
-        if (transform_sign == 1) {
+        if (transform_sign == 1)
+        {
             tau9r = -tau5r + tau6r; // Apply rotation for forward transform (real)
             tau9i = -tau5i + tau6i; // Apply rotation for forward transform (imag)
-        } else {
+        }
+        else
+        {
             tau9r = tau5r - tau6r; // Apply rotation for inverse transform (real)
             tau9i = tau5i - tau6i; // Apply rotation for inverse transform (imag)
         }
@@ -634,10 +695,13 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
 
         tau8r = tau4r - c1 * temp1r; // Apply -45° rotation (real)
         tau8i = tau4i - c1 * temp1i; // Apply -45° rotation (imag)
-        if (transform_sign == 1) {
+        if (transform_sign == 1)
+        {
             tau9r = -s1 * temp2r + tau7r; // Apply 45° rotation for forward transform (real)
             tau9i = -s1 * temp2i + tau7i; // Apply 45° rotation for forward transform (imag)
-        } else {
+        }
+        else
+        {
             tau9r = s1 * temp2r - tau7r; // Apply 45° rotation for inverse transform (real)
             tau9i = s1 * temp2i - tau7i; // Apply 45° rotation for inverse transform (imag)
         }
@@ -646,7 +710,9 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
         output_buffer[3].im = tau8i + tau9r; // Fourth rotated output (imag)
         output_buffer[5].re = tau8r + tau9i; // Sixth rotated output (real)
         output_buffer[5].im = tau8i - tau9r; // Sixth rotated output (imag)
-    } else if (radix == 2) {
+    }
+    else if (radix == 2)
+    {
         /**
          * @brief Radix-2 decomposition for two-point sub-FFTs.
          *
@@ -662,24 +728,27 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
         mixed_radix_dit_rec(output_buffer, input_buffer, fft_obj, transform_sign, sub_length, new_stride, factor_index + 1);
         mixed_radix_dit_rec(output_buffer + sub_length, input_buffer + stride, fft_obj, transform_sign, sub_length, new_stride, factor_index + 1);
 
-        for (int k = 0; k < sub_length; k++) {
-            index = sub_length - 1 + k; // Index into twiddle factors for current frequency
+        for (int k = 0; k < sub_length; k++)
+        {
+            index = sub_length - 1 + k;                    // Index into twiddle factors for current frequency
             twiddle_real = (fft_obj->twiddle + index)->re; // Real part of twiddle factor
             twiddle_imag = (fft_obj->twiddle + index)->im; // Imaginary part of twiddle factor
 
             target_index = k + sub_length; // Target index for odd-indexed sub-FFT result
-            tau1r = output_buffer[k].re; // Save even-indexed real part
-            tau1i = output_buffer[k].im; // Save even-indexed imaginary part
+            tau1r = output_buffer[k].re;   // Save even-indexed real part
+            tau1i = output_buffer[k].im;   // Save even-indexed imaginary part
 
             tau2r = output_buffer[target_index].re * twiddle_real - output_buffer[target_index].im * twiddle_imag; // Apply twiddle factor (real)
             tau2i = output_buffer[target_index].im * twiddle_real + output_buffer[target_index].re * twiddle_imag; // Apply twiddle factor (imag)
 
-            output_buffer[k].re = tau1r + tau2r; // Combine even and odd results (real)
-            output_buffer[k].im = tau1i + tau2i; // Combine even and odd results (imag)
+            output_buffer[k].re = tau1r + tau2r;            // Combine even and odd results (real)
+            output_buffer[k].im = tau1i + tau2i;            // Combine even and odd results (imag)
             output_buffer[target_index].re = tau1r - tau2r; // Compute difference for odd result (real)
             output_buffer[target_index].im = tau1i - tau2i; // Compute difference for odd result (imag)
         }
-    } else if (radix == 3) {
+    }
+    else if (radix == 3)
+    {
         /**
          * @brief Radix-3 decomposition for three-point sub-FFTs.
          *
@@ -698,39 +767,42 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
         mixed_radix_dit_rec(output_buffer + sub_length, input_buffer + stride, fft_obj, transform_sign, sub_length, new_stride, factor_index + 1);
         mixed_radix_dit_rec(output_buffer + 2 * sub_length, input_buffer + 2 * stride, fft_obj, transform_sign, sub_length, new_stride, factor_index + 1);
 
-        for (int k = 0; k < sub_length; k++) {
-            index = sub_length - 1 + 2 * k; // Index into twiddle factors for first rotation
+        for (int k = 0; k < sub_length; k++)
+        {
+            index = sub_length - 1 + 2 * k;                // Index into twiddle factors for first rotation
             twiddle_real = (fft_obj->twiddle + index)->re; // Real part of first twiddle factor
             twiddle_imag = (fft_obj->twiddle + index)->im; // Imaginary part of first twiddle factor
             index++;
             twiddle2_real = (fft_obj->twiddle + index)->re; // Real part of second twiddle factor
             twiddle2_imag = (fft_obj->twiddle + index)->im; // Imaginary part of second twiddle factor
 
-            target1 = k + sub_length; // Target for first sub-FFT result
+            target1 = k + sub_length;       // Target for first sub-FFT result
             target2 = target1 + sub_length; // Target for second sub-FFT result
 
-            a_real = output_buffer[k].re; // Save first sub-FFT real part
-            a_imag = output_buffer[k].im; // Save first sub-FFT imaginary part
-            b_real = output_buffer[target1].re * twiddle_real - output_buffer[target1].im * twiddle_imag; // Apply first twiddle (real)
-            b_imag = output_buffer[target1].im * twiddle_real + output_buffer[target1].re * twiddle_imag; // Apply first twiddle (imag)
+            a_real = output_buffer[k].re;                                                                   // Save first sub-FFT real part
+            a_imag = output_buffer[k].im;                                                                   // Save first sub-FFT imaginary part
+            b_real = output_buffer[target1].re * twiddle_real - output_buffer[target1].im * twiddle_imag;   // Apply first twiddle (real)
+            b_imag = output_buffer[target1].im * twiddle_real + output_buffer[target1].re * twiddle_imag;   // Apply first twiddle (imag)
             c_real = output_buffer[target2].re * twiddle2_real - output_buffer[target2].im * twiddle2_imag; // Apply second twiddle (real)
             c_imag = output_buffer[target2].im * twiddle2_real + output_buffer[target2].re * twiddle2_imag; // Apply second twiddle (imag)
 
-            tau0r = b_real + c_real; // Sum of rotated second and third sub-FFTs (real)
-            tau0i = b_imag + c_imag; // Sum of rotated second and third sub-FFTs (imag)
+            tau0r = b_real + c_real;                                 // Sum of rotated second and third sub-FFTs (real)
+            tau0i = b_imag + c_imag;                                 // Sum of rotated second and third sub-FFTs (imag)
             tau1r = transform_sign * sqrt3_by_2 * (b_real - c_real); // Rotated difference (real, 120°)
             tau1i = transform_sign * sqrt3_by_2 * (b_imag - c_imag); // Rotated difference (imag, 120°)
-            tau2r = a_real - tau0r * 0.5; // Center adjustment (real)
-            tau2i = a_imag - tau0i * 0.5; // Center adjustment (imag)
+            tau2r = a_real - tau0r * 0.5;                            // Center adjustment (real)
+            tau2i = a_imag - tau0i * 0.5;                            // Center adjustment (imag)
 
-            output_buffer[k].re = a_real + tau0r; // Combine with first sub-FFT (real)
-            output_buffer[k].im = a_imag + tau0i; // Combine with first sub-FFT (imag)
+            output_buffer[k].re = a_real + tau0r;      // Combine with first sub-FFT (real)
+            output_buffer[k].im = a_imag + tau0i;      // Combine with first sub-FFT (imag)
             output_buffer[target1].re = tau2r + tau1i; // Apply rotation for second output (real)
             output_buffer[target1].im = tau2i - tau1r; // Apply rotation for second output (imag)
             output_buffer[target2].re = tau2r - tau1i; // Apply rotation for third output (real)
             output_buffer[target2].im = tau2i + tau1r; // Apply rotation for third output (imag)
         }
-    } else if (radix == 4) {
+    }
+    else if (radix == 4)
+    {
         /**
          * @brief Radix-4 decomposition for four-point sub-FFTs.
          *
@@ -755,8 +827,8 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
         target2 = target1 + sub_length;
         target3 = target2 + sub_length;
 
-        a_real = output_buffer[0].re; // Save first sub-FFT real part
-        a_imag = output_buffer[0].im; // Save first sub-FFT imaginary part
+        a_real = output_buffer[0].re;       // Save first sub-FFT real part
+        a_imag = output_buffer[0].im;       // Save first sub-FFT imaginary part
         b_real = output_buffer[target1].re; // Save second sub-FFT real part
         b_imag = output_buffer[target1].im; // Save second sub-FFT imaginary part
         c_real = output_buffer[target2].re; // Save third sub-FFT real part
@@ -764,17 +836,17 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
         d_real = output_buffer[target3].re; // Save fourth sub-FFT real part
         d_imag = output_buffer[target3].im; // Save fourth sub-FFT imaginary part
 
-        tau0r = a_real + c_real; // Sum of first and third sub-FFTs (real)
-        tau0i = a_imag + c_imag; // Sum of first and third sub-FFTs (imag)
-        tau1r = a_real - c_real; // Difference of first and third sub-FFTs (real)
-        tau1i = a_imag - c_imag; // Difference of first and third sub-FFTs (imag)
-        tau2r = b_real + d_real; // Sum of second and fourth sub-FFTs (real)
-        tau2i = b_imag + d_imag; // Sum of second and fourth sub-FFTs (imag)
+        tau0r = a_real + c_real;                    // Sum of first and third sub-FFTs (real)
+        tau0i = a_imag + c_imag;                    // Sum of first and third sub-FFTs (imag)
+        tau1r = a_real - c_real;                    // Difference of first and third sub-FFTs (real)
+        tau1i = a_imag - c_imag;                    // Difference of first and third sub-FFTs (imag)
+        tau2r = b_real + d_real;                    // Sum of second and fourth sub-FFTs (real)
+        tau2i = b_imag + d_imag;                    // Sum of second and fourth sub-FFTs (imag)
         tau3r = transform_sign * (b_real - d_real); // Rotated difference (real)
         tau3i = transform_sign * (b_imag - d_imag); // Rotated difference (imag)
 
-        output_buffer[0].re = tau0r + tau2r; // Combine sums for first output (real)
-        output_buffer[0].im = tau0i + tau2i; // Combine sums for first output (imag)
+        output_buffer[0].re = tau0r + tau2r;       // Combine sums for first output (real)
+        output_buffer[0].im = tau0i + tau2i;       // Combine sums for first output (imag)
         output_buffer[target1].re = tau1r + tau3i; // Apply rotation for second output (real)
         output_buffer[target1].im = tau1i - tau3r; // Apply rotation for second output (imag)
         output_buffer[target2].re = tau0r - tau2r; // Combine differences for third output (real)
@@ -782,8 +854,9 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
         output_buffer[target3].re = tau1r - tau3i; // Apply rotation for fourth output (real)
         output_buffer[target3].im = tau1i + tau3r; // Apply rotation for fourth output (imag)
 
-        for (int k = 1; k < sub_length; k++) {
-            index = sub_length - 1 + 3 * k; // Index into twiddle factors for current frequency
+        for (int k = 1; k < sub_length; k++)
+        {
+            index = sub_length - 1 + 3 * k;                // Index into twiddle factors for current frequency
             twiddle_real = (fft_obj->twiddle + index)->re; // Real part of first twiddle factor
             twiddle_imag = (fft_obj->twiddle + index)->im; // Imaginary part of first twiddle factor
             index++;
@@ -793,30 +866,30 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
             twiddle3_real = (fft_obj->twiddle + index)->re; // Real part of third twiddle factor
             twiddle3_imag = (fft_obj->twiddle + index)->im; // Imaginary part of third twiddle factor
 
-            target1 = k + sub_length; // Target for second sub-FFT result
+            target1 = k + sub_length;       // Target for second sub-FFT result
             target2 = target1 + sub_length; // Target for third sub-FFT result
             target3 = target2 + sub_length; // Target for fourth sub-FFT result
 
-            a_real = output_buffer[k].re; // Save current sub-FFT real part
-            a_imag = output_buffer[k].im; // Save current sub-FFT imaginary part
-            b_real = output_buffer[target1].re * twiddle_real - output_buffer[target1].im * twiddle_imag; // Apply first twiddle (real)
-            b_imag = output_buffer[target1].im * twiddle_real + output_buffer[target1].re * twiddle_imag; // Apply first twiddle (imag)
+            a_real = output_buffer[k].re;                                                                   // Save current sub-FFT real part
+            a_imag = output_buffer[k].im;                                                                   // Save current sub-FFT imaginary part
+            b_real = output_buffer[target1].re * twiddle_real - output_buffer[target1].im * twiddle_imag;   // Apply first twiddle (real)
+            b_imag = output_buffer[target1].im * twiddle_real + output_buffer[target1].re * twiddle_imag;   // Apply first twiddle (imag)
             c_real = output_buffer[target2].re * twiddle2_real - output_buffer[target2].im * twiddle2_imag; // Apply second twiddle (real)
             c_imag = output_buffer[target2].im * twiddle2_real + output_buffer[target2].re * twiddle2_imag; // Apply second twiddle (imag)
             d_real = output_buffer[target3].re * twiddle3_real - output_buffer[target3].im * twiddle3_imag; // Apply third twiddle (real)
             d_imag = output_buffer[target3].im * twiddle3_real + output_buffer[target3].re * twiddle3_imag; // Apply third twiddle (imag)
 
-            tau0r = a_real + c_real; // Sum of current and third sub-FFTs (real)
-            tau0i = a_imag + c_imag; // Sum of current and third sub-FFTs (imag)
-            tau1r = a_real - c_real; // Difference of current and third sub-FFTs (real)
-            tau1i = a_imag - c_imag; // Difference of current and third sub-FFTs (imag)
-            tau2r = b_real + d_real; // Sum of second and fourth sub-FFTs (real)
-            tau2i = b_imag + d_imag; // Sum of second and fourth sub-FFTs (imag)
+            tau0r = a_real + c_real;                    // Sum of current and third sub-FFTs (real)
+            tau0i = a_imag + c_imag;                    // Sum of current and third sub-FFTs (imag)
+            tau1r = a_real - c_real;                    // Difference of current and third sub-FFTs (real)
+            tau1i = a_imag - c_imag;                    // Difference of current and third sub-FFTs (imag)
+            tau2r = b_real + d_real;                    // Sum of second and fourth sub-FFTs (real)
+            tau2i = b_imag + d_imag;                    // Sum of second and fourth sub-FFTs (imag)
             tau3r = transform_sign * (b_real - d_real); // Rotated difference (real)
             tau3i = transform_sign * (b_imag - d_imag); // Rotated difference (imag)
 
-            output_buffer[k].re = tau0r + tau2r; // Combine sums for current output (real)
-            output_buffer[k].im = tau0i + tau2i; // Combine sums for current output (imag)
+            output_buffer[k].re = tau0r + tau2r;       // Combine sums for current output (real)
+            output_buffer[k].im = tau0i + tau2i;       // Combine sums for current output (imag)
             output_buffer[target1].re = tau1r + tau3i; // Apply rotation for second output (real)
             output_buffer[target1].im = tau1i - tau3r; // Apply rotation for second output (imag)
             output_buffer[target2].re = tau0r - tau2r; // Combine differences for third output (real)
@@ -824,7 +897,9 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
             output_buffer[target3].re = tau1r - tau3i; // Apply rotation for fourth output (real)
             output_buffer[target3].im = tau1i + tau3r; // Apply rotation for fourth output (imag)
         }
-    } else if (radix == 5) {
+    }
+    else if (radix == 5)
+    {
         /**
          * @brief Radix-5 decomposition for five-point sub-FFTs.
          *
@@ -852,8 +927,8 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
         target3 = target2 + sub_length;
         target4 = target3 + sub_length;
 
-        a_real = output_buffer[0].re; // Save first sub-FFT real part
-        a_imag = output_buffer[0].im; // Save first sub-FFT imaginary part
+        a_real = output_buffer[0].re;       // Save first sub-FFT real part
+        a_imag = output_buffer[0].im;       // Save first sub-FFT imaginary part
         b_real = output_buffer[target1].re; // Save second sub-FFT real part
         b_imag = output_buffer[target1].im; // Save second sub-FFT imaginary part
         c_real = output_buffer[target2].re; // Save third sub-FFT real part
@@ -874,17 +949,20 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
 
         output_buffer[0].re = a_real + tau0r + tau1r; // Combine all sums for first output (real)
         output_buffer[0].im = a_imag + tau0i + tau1i; // Combine all sums for first output (imag)
-        tau4r = c1 * tau0r + c2 * tau1r; // Apply 72° rotation (real)
-        tau4i = c1 * tau0i + c2 * tau1i; // Apply 72° rotation (imag)
-        if (transform_sign == 1) {
+        tau4r = c1 * tau0r + c2 * tau1r;              // Apply 72° rotation (real)
+        tau4i = c1 * tau0i + c2 * tau1i;              // Apply 72° rotation (imag)
+        if (transform_sign == 1)
+        {
             tau5r = s1 * tau2r + s2 * tau3r; // Apply 144° rotation for forward transform (real)
             tau5i = s1 * tau2i + s2 * tau3i; // Apply 144° rotation for forward transform (imag)
-        } else {
+        }
+        else
+        {
             tau5r = -s1 * tau2r - s2 * tau3r; // Apply 144° rotation for inverse transform (real)
             tau5i = -s1 * tau2i - s2 * tau3i; // Apply 144° rotation for inverse transform (imag)
         }
-        tau6r = a_real + tau4r; // Combine with center (real)
-        tau6i = a_imag + tau4i; // Combine with center (imag)
+        tau6r = a_real + tau4r;                    // Combine with center (real)
+        tau6i = a_imag + tau4i;                    // Combine with center (imag)
         output_buffer[target1].re = tau6r + tau5i; // Second rotated output (real)
         output_buffer[target1].im = tau6i - tau5r; // Second rotated output (imag)
         output_buffer[target4].re = tau6r - tau5i; // Fifth rotated output (real)
@@ -892,22 +970,26 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
 
         tau4r = c2 * tau0r + c1 * tau1r; // Apply 144° rotation (real)
         tau4i = c2 * tau0i + c1 * tau1i; // Apply 144° rotation (imag)
-        if (transform_sign == 1) {
+        if (transform_sign == 1)
+        {
             tau5r = s2 * tau2r - s1 * tau3r; // Apply 72° rotation for forward transform (real)
             tau5i = s2 * tau2i - s1 * tau3i; // Apply 72° rotation for forward transform (imag)
-        } else {
+        }
+        else
+        {
             tau5r = -s2 * tau2r + s1 * tau3r; // Apply 72° rotation for inverse transform (real)
             tau5i = -s2 * tau2i + s1 * tau3i; // Apply 72° rotation for inverse transform (imag)
         }
-        tau6r = a_real + tau4r; // Combine with center (real)
-        tau6i = a_imag + tau4i; // Combine with center (imag)
+        tau6r = a_real + tau4r;                    // Combine with center (real)
+        tau6i = a_imag + tau4i;                    // Combine with center (imag)
         output_buffer[target2].re = tau6r + tau5i; // Third rotated output (real)
         output_buffer[target2].im = tau6i - tau5r; // Third rotated output (imag)
         output_buffer[target3].re = tau6r - tau5i; // Fourth rotated output (real)
         output_buffer[target3].im = tau6i + tau5r; // Fourth rotated output (imag)
 
-        for (int k = 1; k < sub_length; k++) {
-            index = sub_length - 1 + 4 * k; // Index into twiddle factors for current frequency
+        for (int k = 1; k < sub_length; k++)
+        {
+            index = sub_length - 1 + 4 * k;                // Index into twiddle factors for current frequency
             twiddle_real = (fft_obj->twiddle + index)->re; // Real part of first twiddle factor
             twiddle_imag = (fft_obj->twiddle + index)->im; // Imaginary part of first twiddle factor
             index++;
@@ -920,15 +1002,15 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
             twiddle4_real = (fft_obj->twiddle + index)->re; // Real part of fourth twiddle factor
             twiddle4_imag = (fft_obj->twiddle + index)->im; // Imaginary part of fourth twiddle factor
 
-            target1 = k + sub_length; // Target for second sub-FFT result
+            target1 = k + sub_length;       // Target for second sub-FFT result
             target2 = target1 + sub_length; // Target for third sub-FFT result
             target3 = target2 + sub_length; // Target for fourth sub-FFT result
             target4 = target3 + sub_length; // Target for fifth sub-FFT result
 
-            a_real = output_buffer[k].re; // Save current sub-FFT real part
-            a_imag = output_buffer[k].im; // Save current sub-FFT imaginary part
-            b_real = output_buffer[target1].re * twiddle_real - output_buffer[target1].im * twiddle_imag; // Apply first twiddle (real)
-            b_imag = output_buffer[target1].im * twiddle_real + output_buffer[target1].re * twiddle_imag; // Apply first twiddle (imag)
+            a_real = output_buffer[k].re;                                                                   // Save current sub-FFT real part
+            a_imag = output_buffer[k].im;                                                                   // Save current sub-FFT imaginary part
+            b_real = output_buffer[target1].re * twiddle_real - output_buffer[target1].im * twiddle_imag;   // Apply first twiddle (real)
+            b_imag = output_buffer[target1].im * twiddle_real + output_buffer[target1].re * twiddle_imag;   // Apply first twiddle (imag)
             c_real = output_buffer[target2].re * twiddle2_real - output_buffer[target2].im * twiddle2_imag; // Apply second twiddle (real)
             c_imag = output_buffer[target2].im * twiddle2_real + output_buffer[target2].re * twiddle2_imag; // Apply second twiddle (imag)
             d_real = output_buffer[target3].re * twiddle3_real - output_buffer[target3].im * twiddle3_imag; // Apply third twiddle (real)
@@ -947,17 +1029,20 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
 
             output_buffer[k].re = a_real + tau0r + tau1r; // Combine all sums for current output (real)
             output_buffer[k].im = a_imag + tau0i + tau1i; // Combine all sums for current output (imag)
-            tau4r = c1 * tau0r + c2 * tau1r; // Apply 72° rotation (real)
-            tau4i = c1 * tau0i + c2 * tau1i; // Apply 72° rotation (imag)
-            if (transform_sign == 1) {
+            tau4r = c1 * tau0r + c2 * tau1r;              // Apply 72° rotation (real)
+            tau4i = c1 * tau0i + c2 * tau1i;              // Apply 72° rotation (imag)
+            if (transform_sign == 1)
+            {
                 tau5r = s1 * tau2r + s2 * tau3r; // Apply 144° rotation for forward transform (real)
                 tau5i = s1 * tau2i + s2 * tau3i; // Apply 144° rotation for forward transform (imag)
-            } else {
+            }
+            else
+            {
                 tau5r = -s1 * tau2r - s2 * tau3r; // Apply 144° rotation for inverse transform (real)
                 tau5i = -s1 * tau2i - s2 * tau3i; // Apply 144° rotation for inverse transform (imag)
             }
-            tau6r = a_real + tau4r; // Combine with center (real)
-            tau6i = a_imag + tau4i; // Combine with center (imag)
+            tau6r = a_real + tau4r;                    // Combine with center (real)
+            tau6i = a_imag + tau4i;                    // Combine with center (imag)
             output_buffer[target1].re = tau6r + tau5i; // Second rotated output (real)
             output_buffer[target1].im = tau6i - tau5r; // Second rotated output (imag)
             output_buffer[target4].re = tau6r - tau5i; // Fifth rotated output (real)
@@ -965,21 +1050,26 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
 
             tau4r = c2 * tau0r + c1 * tau1r; // Apply 144° rotation (real)
             tau4i = c2 * tau0i + c1 * tau1i; // Apply 144° rotation (imag)
-            if (transform_sign == 1) {
+            if (transform_sign == 1)
+            {
                 tau5r = s2 * tau2r - s1 * tau3r; // Apply 72° rotation for forward transform (real)
                 tau5i = s2 * tau2i - s1 * tau3i; // Apply 72° rotation for forward transform (imag)
-            } else {
+            }
+            else
+            {
                 tau5r = -s2 * tau2r + s1 * tau3r; // Apply 72° rotation for inverse transform (real)
                 tau5i = -s2 * tau2i + s1 * tau3i; // Apply 72° rotation for inverse transform (imag)
             }
-            tau6r = a_real + tau4r; // Combine with center (real)
-            tau6i = a_imag + tau4i; // Combine with center (imag)
+            tau6r = a_real + tau4r;                    // Combine with center (real)
+            tau6i = a_imag + tau4i;                    // Combine with center (imag)
             output_buffer[target2].re = tau6r + tau5i; // Third rotated output (real)
             output_buffer[target2].im = tau6i - tau5r; // Third rotated output (imag)
             output_buffer[target3].re = tau6r - tau5i; // Fourth rotated output (real)
             output_buffer[target3].im = tau6i + tau5r; // Fourth rotated output (imag)
         }
-    } else if (radix == 7) {
+    }
+    else if (radix == 7)
+    {
         /**
          * @brief Radix-7 decomposition for seven-point sub-FFTs.
          *
@@ -1011,8 +1101,8 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
         target5 = target4 + sub_length;
         target6 = target5 + sub_length;
 
-        a_real = output_buffer[0].re; // Save first sub-FFT real part
-        a_imag = output_buffer[0].im; // Save first sub-FFT imaginary part
+        a_real = output_buffer[0].re;       // Save first sub-FFT real part
+        a_imag = output_buffer[0].im;       // Save first sub-FFT imaginary part
         b_real = output_buffer[target1].re; // Save second sub-FFT real part
         b_imag = output_buffer[target1].im; // Save second sub-FFT imaginary part
         c_real = output_buffer[target2].re; // Save third sub-FFT real part
@@ -1039,14 +1129,17 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
         tau2i = d_imag + e_imag; // Sum of fourth and fifth sub-FFTs (imag)
         tau5i = d_imag - e_imag; // Difference of fourth and fifth sub-FFTs (imag)
 
-        output_buffer[0].re = a_real + tau0r + tau1r + tau2r; // Combine all sums for first output (real)
-        output_buffer[0].im = a_imag + tau0i + tau1i + tau2i; // Combine all sums for first output (imag)
+        output_buffer[0].re = a_real + tau0r + tau1r + tau2r;  // Combine all sums for first output (real)
+        output_buffer[0].im = a_imag + tau0i + tau1i + tau2i;  // Combine all sums for first output (imag)
         tau6r = a_real + c1 * tau0r + c2 * tau1r + c3 * tau2r; // Apply 51.43° rotation (real)
         tau6i = a_imag + c1 * tau0i + c2 * tau1i + c3 * tau2i; // Apply 51.43° rotation (imag)
-        if (transform_sign == 1) {
+        if (transform_sign == 1)
+        {
             tau7r = -s1 * tau3r - s2 * tau4r - s3 * tau5r; // Apply rotations for forward transform (real, -51.43°, -102.86°, -154.29°)
             tau7i = -s1 * tau3i - s2 * tau4i - s3 * tau5i; // Apply rotations for forward transform (imag, -51.43°, -102.86°, -154.29°)
-        } else {
+        }
+        else
+        {
             tau7r = s1 * tau3r + s2 * tau4r + s3 * tau5r; // Apply rotations for inverse transform (real, +51.43°, +102.86°, +154.29°)
             tau7i = s1 * tau3i + s2 * tau4i + s3 * tau5i; // Apply rotations for inverse transform (imag, +51.43°, +102.86°, +154.29°)
         }
@@ -1058,10 +1151,13 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
 
         tau6r = a_real + c2 * tau0r + c3 * tau1r + c1 * tau2r; // Apply 102.86° rotation (real)
         tau6i = a_imag + c2 * tau0i + c3 * tau1i + c1 * tau2i; // Apply 102.86° rotation (imag)
-        if (transform_sign == 1) {
+        if (transform_sign == 1)
+        {
             tau7r = -s2 * tau3r + s3 * tau4r + s1 * tau5r; // Apply rotations for forward transform (real, -102.86°, +154.29°, +51.43°)
             tau7i = -s2 * tau3i + s3 * tau4i + s1 * tau5i; // Apply rotations for forward transform (imag, -102.86°, +154.29°, +51.43°)
-        } else {
+        }
+        else
+        {
             tau7r = s2 * tau3r - s3 * tau4r - s1 * tau5r; // Apply rotations for inverse transform (real, +102.86°, -154.29°, -51.43°)
             tau7i = s2 * tau3i - s3 * tau4i - s1 * tau5i; // Apply rotations for inverse transform (imag, +102.86°, -154.29°, -51.43°)
         }
@@ -1073,10 +1169,13 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
 
         tau6r = a_real + c3 * tau0r + c1 * tau1r + c2 * tau2r; // Apply 154.29° rotation (real)
         tau6i = a_imag + c3 * tau0i + c1 * tau1i + c2 * tau2i; // Apply 154.29° rotation (imag)
-        if (transform_sign == 1) {
+        if (transform_sign == 1)
+        {
             tau7r = -s3 * tau3r + s1 * tau4r - s2 * tau5r; // Apply rotations for forward transform (real, -154.29°, +51.43°, -102.86°)
             tau7i = -s3 * tau3i + s1 * tau4i - s2 * tau5i; // Apply rotations for forward transform (imag, -154.29°, +51.43°, -102.86°)
-        } else {
+        }
+        else
+        {
             tau7r = s3 * tau3r - s1 * tau4r + s2 * tau5r; // Apply rotations for inverse transform (real, +154.29°, -51.43°, +102.86°)
             tau7i = s3 * tau3i - s1 * tau4i + s2 * tau5i; // Apply rotations for inverse transform (imag, +154.29°, -51.43°, +102.86°)
         }
@@ -1086,7 +1185,8 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
         output_buffer[target4].re = tau6r + tau7i; // Fifth rotated output (real)
         output_buffer[target4].im = tau6i - tau7r; // Fifth rotated output (imag)
 
-        for (int k = 1; k < sub_length; k++) {
+        for (int k = 1; k < sub_length; k++)
+        {
             /**
              * @brief Combine sub-FFT results for higher indices using twiddle factors.
              *
@@ -1096,7 +1196,7 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
              * Mathematically, this corresponds to \(X(k) = \sum_{n=0}^{6} x(n) \cdot W_N^{kn}\),
              * where \(W_N = e^{-2\pi i / N}\) for forward transforms, adjusted by transform_sign.
              */
-            index = sub_length - 1 + 6 * k; // Index into twiddle factors for current frequency
+            index = sub_length - 1 + 6 * k;                // Index into twiddle factors for current frequency
             twiddle_real = (fft_obj->twiddle + index)->re; // Real part of first twiddle factor
             twiddle_imag = (fft_obj->twiddle + index)->im; // Imaginary part of first twiddle factor
             index++;
@@ -1115,17 +1215,17 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
             twiddle6_real = (fft_obj->twiddle + index)->re; // Real part of sixth twiddle factor
             twiddle6_imag = (fft_obj->twiddle + index)->im; // Imaginary part of sixth twiddle factor
 
-            target1 = k + sub_length; // Target for second sub-FFT result
+            target1 = k + sub_length;       // Target for second sub-FFT result
             target2 = target1 + sub_length; // Target for third sub-FFT result
             target3 = target2 + sub_length; // Target for fourth sub-FFT result
             target4 = target3 + sub_length; // Target for fifth sub-FFT result
             target5 = target4 + sub_length; // Target for sixth sub-FFT result
             target6 = target5 + sub_length; // Target for seventh sub-FFT result
 
-            a_real = output_buffer[k].re; // Save current sub-FFT real part
-            a_imag = output_buffer[k].im; // Save current sub-FFT imaginary part
-            b_real = output_buffer[target1].re * twiddle_real - output_buffer[target1].im * twiddle_imag; // Apply first twiddle (real)
-            b_imag = output_buffer[target1].im * twiddle_real + output_buffer[target1].re * twiddle_imag; // Apply first twiddle (imag)
+            a_real = output_buffer[k].re;                                                                   // Save current sub-FFT real part
+            a_imag = output_buffer[k].im;                                                                   // Save current sub-FFT imaginary part
+            b_real = output_buffer[target1].re * twiddle_real - output_buffer[target1].im * twiddle_imag;   // Apply first twiddle (real)
+            b_imag = output_buffer[target1].im * twiddle_real + output_buffer[target1].re * twiddle_imag;   // Apply first twiddle (imag)
             c_real = output_buffer[target2].re * twiddle2_real - output_buffer[target2].im * twiddle2_imag; // Apply second twiddle (real)
             c_imag = output_buffer[target2].im * twiddle2_real + output_buffer[target2].re * twiddle2_imag; // Apply second twiddle (imag)
             d_real = output_buffer[target3].re * twiddle3_real - output_buffer[target3].im * twiddle3_imag; // Apply third twiddle (real)
@@ -1150,14 +1250,17 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
             tau2i = d_imag + e_imag; // Sum of fourth and fifth sub-FFTs (imag)
             tau5i = d_imag - e_imag; // Difference of fourth and fifth sub-FFTs (imag)
 
-            output_buffer[k].re = a_real + tau0r + tau1r + tau2r; // Combine all sums for current output (real)
-            output_buffer[k].im = a_imag + tau0i + tau1i + tau2i; // Combine all sums for current output (imag)
+            output_buffer[k].re = a_real + tau0r + tau1r + tau2r;  // Combine all sums for current output (real)
+            output_buffer[k].im = a_imag + tau0i + tau1i + tau2i;  // Combine all sums for current output (imag)
             tau6r = a_real + c1 * tau0r + c2 * tau1r + c3 * tau2r; // Apply 51.43° rotation (real)
             tau6i = a_imag + c1 * tau0i + c2 * tau1i + c3 * tau2i; // Apply 51.43° rotation (imag)
-            if (transform_sign == 1) {
+            if (transform_sign == 1)
+            {
                 tau7r = -s1 * tau3r - s2 * tau4r - s3 * tau5r; // Apply rotations for forward transform (real)
                 tau7i = -s1 * tau3i - s2 * tau4i - s3 * tau5i; // Apply rotations for forward transform (imag)
-            } else {
+            }
+            else
+            {
                 tau7r = s1 * tau3r + s2 * tau4r + s3 * tau5r; // Apply rotations for inverse transform (real)
                 tau7i = s1 * tau3i + s2 * tau4i + s3 * tau5i; // Apply rotations for inverse transform (imag)
             }
@@ -1169,10 +1272,13 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
 
             tau6r = a_real + c2 * tau0r + c3 * tau1r + c1 * tau2r; // Apply 102.86° rotation (real)
             tau6i = a_imag + c2 * tau0i + c3 * tau1i + c1 * tau2i; // Apply 102.86° rotation (imag)
-            if (transform_sign == 1) {
+            if (transform_sign == 1)
+            {
                 tau7r = -s2 * tau3r + s3 * tau4r + s1 * tau5r; // Apply rotations for forward transform (real)
                 tau7i = -s2 * tau3i + s3 * tau4i + s1 * tau5i; // Apply rotations for forward transform (imag)
-            } else {
+            }
+            else
+            {
                 tau7r = s2 * tau3r - s3 * tau4r - s1 * tau5r; // Apply rotations for inverse transform (real)
                 tau7i = s2 * tau3i - s3 * tau4i - s1 * tau5i; // Apply rotations for inverse transform (imag)
             }
@@ -1184,10 +1290,13 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
 
             tau6r = a_real + c3 * tau0r + c1 * tau1r + c2 * tau2r; // Apply 154.29° rotation (real)
             tau6i = a_imag + c3 * tau0i + c1 * tau1i + c2 * tau2i; // Apply 154.29° rotation (imag)
-            if (transform_sign == 1) {
+            if (transform_sign == 1)
+            {
                 tau7r = -s3 * tau3r + s1 * tau4r - s2 * tau5r; // Apply rotations for forward transform (real)
                 tau7i = -s3 * tau3i + s1 * tau4i - s2 * tau5i; // Apply rotations for forward transform (imag)
-            } else {
+            }
+            else
+            {
                 tau7r = s3 * tau3r - s1 * tau4r + s2 * tau5r; // Apply rotations for inverse transform (real)
                 tau7i = s3 * tau3i - s1 * tau4i + s2 * tau5i; // Apply rotations for inverse transform (imag)
             }
@@ -1197,7 +1306,9 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
             output_buffer[target4].re = tau6r + tau7i; // Fifth rotated output (real)
             output_buffer[target4].im = tau6i - tau7r; // Fifth rotated output (imag)
         }
-    } else if (radix == 8) {
+    }
+    else if (radix == 8)
+    {
         /**
          * @brief Radix-8 decomposition for eight-point sub-FFTs.
          *
@@ -1223,7 +1334,8 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
         mixed_radix_dit_rec(output_buffer + 6 * sub_length, input_buffer + 6 * stride, fft_obj, transform_sign, sub_length, new_stride, factor_index + 1);
         mixed_radix_dit_rec(output_buffer + 7 * sub_length, input_buffer + 7 * stride, fft_obj, transform_sign, sub_length, new_stride, factor_index + 1);
 
-        for (int k = 0; k < sub_length; k++) {
+        for (int k = 0; k < sub_length; k++)
+        {
             /**
              * @brief Combine sub-FFT results for higher indices using twiddle factors.
              *
@@ -1233,7 +1345,7 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
              * Mathematically, this corresponds to \(X(k) = \sum_{n=0}^{7} x(n) \cdot W_N^{kn}\),
              * where \(W_N = e^{-2\pi i / N}\) for forward transforms, adjusted by transform_sign.
              */
-            index = sub_length - 1 + 7 * k; // Index into twiddle factors for current frequency
+            index = sub_length - 1 + 7 * k;                // Index into twiddle factors for current frequency
             twiddle_real = (fft_obj->twiddle + index)->re; // Real part of first twiddle factor
             twiddle_imag = (fft_obj->twiddle + index)->im; // Imaginary part of first twiddle factor
             index++;
@@ -1255,7 +1367,7 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
             twiddle7_real = (fft_obj->twiddle + index)->re; // Real part of seventh twiddle factor
             twiddle7_imag = (fft_obj->twiddle + index)->im; // Imaginary part of seventh twiddle factor
 
-            target1 = k + sub_length; // Target for second sub-FFT result
+            target1 = k + sub_length;       // Target for second sub-FFT result
             target2 = target1 + sub_length; // Target for third sub-FFT result
             target3 = target2 + sub_length; // Target for fourth sub-FFT result
             target4 = target3 + sub_length; // Target for fifth sub-FFT result
@@ -1263,10 +1375,10 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
             target6 = target5 + sub_length; // Target for seventh sub-FFT result
             target7 = target6 + sub_length; // Target for eighth sub-FFT result
 
-            a_real = output_buffer[k].re; // Save current sub-FFT real part
-            a_imag = output_buffer[k].im; // Save current sub-FFT imaginary part
-            b_real = output_buffer[target1].re * twiddle_real - output_buffer[target1].im * twiddle_imag; // Apply first twiddle (real)
-            b_imag = output_buffer[target1].im * twiddle_real + output_buffer[target1].re * twiddle_imag; // Apply first twiddle (imag)
+            a_real = output_buffer[k].re;                                                                   // Save current sub-FFT real part
+            a_imag = output_buffer[k].im;                                                                   // Save current sub-FFT imaginary part
+            b_real = output_buffer[target1].re * twiddle_real - output_buffer[target1].im * twiddle_imag;   // Apply first twiddle (real)
+            b_imag = output_buffer[target1].im * twiddle_real + output_buffer[target1].re * twiddle_imag;   // Apply first twiddle (imag)
             c_real = output_buffer[target2].re * twiddle2_real - output_buffer[target2].im * twiddle2_imag; // Apply second twiddle (real)
             c_imag = output_buffer[target2].im * twiddle2_real + output_buffer[target2].re * twiddle2_imag; // Apply second twiddle (imag)
             d_real = output_buffer[target3].re * twiddle3_real - output_buffer[target3].im * twiddle3_imag; // Apply third twiddle (real)
@@ -1297,8 +1409,8 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
             tau3i = c_imag + g_imag; // Sum of third and seventh sub-FFTs (imag)
             tau7i = c_imag - g_imag; // Difference of third and seventh sub-FFTs (imag)
 
-            output_buffer[k].re = tau0r + tau1r + tau2r + tau3r; // Combine all sums for current output (real)
-            output_buffer[k].im = tau0i + tau1i + tau2i + tau3i; // Combine all sums for current output (imag)
+            output_buffer[k].re = tau0r + tau1r + tau2r + tau3r;       // Combine all sums for current output (real)
+            output_buffer[k].im = tau0i + tau1i + tau2i + tau3i;       // Combine all sums for current output (imag)
             output_buffer[target4].re = tau0r - tau1r - tau2r + tau3r; // Combine differences for fifth output (real)
             output_buffer[target4].im = tau0i - tau1i - tau2i + tau3i; // Combine differences for fifth output (imag)
 
@@ -1307,10 +1419,13 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
 
             tau8r = tau4r + c1 * temp1r; // Apply 45° rotation (real)
             tau8i = tau4i + c1 * temp1i; // Apply 45° rotation (imag)
-            if (transform_sign == 1) {
+            if (transform_sign == 1)
+            {
                 tau9r = -s1 * temp2r - tau7r; // Apply 45° rotation for forward transform (real)
                 tau9i = -s1 * temp2i - tau7i; // Apply 45° rotation for forward transform (imag)
-            } else {
+            }
+            else
+            {
                 tau9r = s1 * temp2r + tau7r; // Apply 45° rotation for inverse transform (real)
                 tau9i = s1 * temp2i + tau7i; // Apply 45° rotation for inverse transform (imag)
             }
@@ -1322,10 +1437,13 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
 
             tau8r = tau0r - tau3r; // Difference for third output (real)
             tau8i = tau0i - tau3i; // Difference for third output (imag)
-            if (transform_sign == 1) {
+            if (transform_sign == 1)
+            {
                 tau9r = -tau5r + tau6r; // Apply rotation for forward transform (real)
                 tau9i = -tau5i + tau6i; // Apply rotation for forward transform (imag)
-            } else {
+            }
+            else
+            {
                 tau9r = tau5r - tau6r; // Apply rotation for inverse transform (real)
                 tau9i = tau5i - tau6i; // Apply rotation for inverse transform (imag)
             }
@@ -1337,10 +1455,13 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
 
             tau8r = tau4r - c1 * temp1r; // Apply -45° rotation (real)
             tau8i = tau4i - c1 * temp1i; // Apply -45° rotation (imag)
-            if (transform_sign == 1) {
+            if (transform_sign == 1)
+            {
                 tau9r = -s1 * temp2r + tau7r; // Apply 45° rotation for forward transform (real)
                 tau9i = -s1 * temp2i + tau7i; // Apply 45° rotation for forward transform (imag)
-            } else {
+            }
+            else
+            {
                 tau9r = s1 * temp2r - tau7r; // Apply 45° rotation for inverse transform (real)
                 tau9i = s1 * temp2i - tau7i; // Apply 45° rotation for inverse transform (imag)
             }
@@ -1350,7 +1471,9 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
             output_buffer[target5].re = tau8r + tau9i; // Sixth rotated output (real)
             output_buffer[target5].im = tau8i - tau9r; // Sixth rotated output (imag)
         }
-    } else {
+    }
+    else
+    {
         /**
          * @brief General radix decomposition for prime factors greater than 8.
          *
@@ -1373,16 +1496,24 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
         fft_type *y_imag = (fft_type *)malloc(radix * sizeof(fft_type));
 
         if (twiddle_real == NULL || twiddle_imag == NULL || tau_real == NULL || tau_imag == NULL ||
-            cos_values == NULL || sin_values == NULL || y_real == NULL || y_imag == NULL) {
+            cos_values == NULL || sin_values == NULL || y_real == NULL || y_imag == NULL)
+        {
             fprintf(stderr, "Error: Memory allocation failed for general radix FFT arrays\n");
             // Free already allocated memory before exiting
-            free(twiddle_real); free(twiddle_imag); free(tau_real); free(tau_imag);
-            free(cos_values); free(sin_values); free(y_real); free(y_imag);
+            free(twiddle_real);
+            free(twiddle_imag);
+            free(tau_real);
+            free(tau_imag);
+            free(cos_values);
+            free(sin_values);
+            free(y_real);
+            free(y_imag);
             exit(EXIT_FAILURE);
         }
 
         new_stride = radix * stride;
-        for (int i = 0; i < radix; ++i) {
+        for (int i = 0; i < radix; ++i)
+        {
             /**
              * @brief Recursively compute sub-FFTs for each radix group.
              *
@@ -1394,7 +1525,8 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
         }
 
         // Precompute cosine and sine values for the general radix
-        for (int i = 1; i < mid_radix + 1; ++i) {
+        for (int i = 1; i < mid_radix + 1; ++i)
+        {
             /**
              * @brief Precompute trigonometric values for twiddle factor synthesis.
              *
@@ -1405,12 +1537,14 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
             cos_values[i - 1] = cos(i * PI2 / radix); // Real part of twiddle factor
             sin_values[i - 1] = sin(i * PI2 / radix); // Imaginary part of twiddle factor
         }
-        for (int i = 0; i < mid_radix; ++i) {
+        for (int i = 0; i < mid_radix; ++i)
+        {
             sin_values[i + mid_radix] = -sin_values[mid_radix - 1 - i]; // Mirror sine values for symmetry
-            cos_values[i + mid_radix] = cos_values[mid_radix - 1 - i]; // Mirror cosine values for symmetry
+            cos_values[i + mid_radix] = cos_values[mid_radix - 1 - i];  // Mirror cosine values for symmetry
         }
 
-        for (int k = 0; k < sub_length; ++k) {
+        for (int k = 0; k < sub_length; ++k)
+        {
             /**
              * @brief Combine sub-FFT results for each frequency index using general radix butterflies.
              *
@@ -1421,27 +1555,30 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
              * where \(W_N = e^{-2\pi i / N}\) for forward transforms, adjusted by transform_sign.
              */
             index = sub_length - 1 + (radix - 1) * k; // Index into twiddle factors for current frequency
-            y_real[0] = output_buffer[k].re; // Save first sub-FFT real part
-            y_imag[0] = output_buffer[k].im; // Save first sub-FFT imaginary part
-            for (int i = 0; i < radix - 1; ++i) {
-                twiddle_real[i] = (fft_obj->twiddle + index)->re; // Real part of twiddle factor
-                twiddle_imag[i] = (fft_obj->twiddle + index)->im; // Imaginary part of twiddle factor
-                target = k + (i + 1) * sub_length; // Target for subsequent sub-FFT results
+            y_real[0] = output_buffer[k].re;          // Save first sub-FFT real part
+            y_imag[0] = output_buffer[k].im;          // Save first sub-FFT imaginary part
+            for (int i = 0; i < radix - 1; ++i)
+            {
+                twiddle_real[i] = (fft_obj->twiddle + index)->re;                                                        // Real part of twiddle factor
+                twiddle_imag[i] = (fft_obj->twiddle + index)->im;                                                        // Imaginary part of twiddle factor
+                target = k + (i + 1) * sub_length;                                                                       // Target for subsequent sub-FFT results
                 y_real[i + 1] = output_buffer[target].re * twiddle_real[i] - output_buffer[target].im * twiddle_imag[i]; // Apply twiddle (real)
                 y_imag[i + 1] = output_buffer[target].im * twiddle_real[i] + output_buffer[target].re * twiddle_imag[i]; // Apply twiddle (imag)
                 index++;
             }
 
-            for (int i = 0; i < mid_radix; ++i) {
-                tau_real[i] = y_real[i + 1] + y_real[radix - 1 - i]; // Sum pairs of rotated outputs (real)
+            for (int i = 0; i < mid_radix; ++i)
+            {
+                tau_real[i] = y_real[i + 1] + y_real[radix - 1 - i];             // Sum pairs of rotated outputs (real)
                 tau_imag[i + mid_radix] = y_imag[i + 1] - y_imag[radix - 1 - i]; // Difference for higher indices (imag)
-                tau_imag[i] = y_imag[i + 1] + y_imag[radix - 1 - i]; // Sum pairs of rotated outputs (imag)
+                tau_imag[i] = y_imag[i + 1] + y_imag[radix - 1 - i];             // Sum pairs of rotated outputs (imag)
                 tau_real[i + mid_radix] = y_real[i + 1] - y_real[radix - 1 - i]; // Difference for higher indices (real)
             }
 
             temp1r = y_real[0]; // Initialize with first real component
             temp1i = y_imag[0]; // Initialize with first imaginary component
-            for (int i = 0; i < mid_radix; ++i) {
+            for (int i = 0; i < mid_radix; ++i)
+            {
                 temp1r += tau_real[i]; // Sum real components
                 temp1i += tau_imag[i]; // Sum imaginary components
             }
@@ -1449,34 +1586,37 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
             output_buffer[k].re = temp1r; // Store combined real part for current frequency
             output_buffer[k].im = temp1i; // Store combined imaginary part for current frequency
 
-            for (int u = 0; u < mid_radix; u++) {
+            for (int u = 0; u < mid_radix; u++)
+            {
                 temp1r = y_real[0]; // Reset real component
                 temp1i = y_imag[0]; // Reset imaginary component
-                temp2r = 0.0; // Initialize real rotation component
-                temp2i = 0.0; // Initialize imaginary rotation component
-                for (int v = 0; v < mid_radix; v++) {
+                temp2r = 0.0;       // Initialize real rotation component
+                temp2i = 0.0;       // Initialize imaginary rotation component
+                for (int v = 0; v < mid_radix; v++)
+                {
                     temp = (u + 1) * (v + 1); // Compute index for twiddle factor
-                    while (temp >= radix) {
+                    while (temp >= radix)
+                    {
                         temp -= radix; // Normalize index modulo radix
                     }
                     temp_temp = temp - 1; // Adjust for zero-based indexing
 
-                    temp1r += cos_values[temp_temp] * tau_real[v]; // Apply cosine for real part
-                    temp1i += cos_values[temp_temp] * tau_imag[v]; // Apply cosine for imaginary part
+                    temp1r += cos_values[temp_temp] * tau_real[v];             // Apply cosine for real part
+                    temp1i += cos_values[temp_temp] * tau_imag[v];             // Apply cosine for imaginary part
                     temp2r -= sin_values[temp_temp] * tau_real[v + mid_radix]; // Apply negative sine for real rotation
                     temp2i -= sin_values[temp_temp] * tau_imag[v + mid_radix]; // Apply negative sine for imaginary rotation
                 }
                 temp2r = transform_sign * temp2r; // Adjust rotation by transform direction (real)
                 temp2i = transform_sign * temp2i; // Adjust rotation by transform direction (imag)
 
-                output_buffer[k + (u + 1) * sub_length].re = temp1r - temp2i; // Store rotated real part for positive index
-                output_buffer[k + (u + 1) * sub_length].im = temp1i + temp2r; // Store rotated imaginary part for positive index
+                output_buffer[k + (u + 1) * sub_length].re = temp1r - temp2i;         // Store rotated real part for positive index
+                output_buffer[k + (u + 1) * sub_length].im = temp1i + temp2r;         // Store rotated imaginary part for positive index
                 output_buffer[k + (radix - u - 1) * sub_length].re = temp1r + temp2i; // Store rotated real part for negative index
                 output_buffer[k + (radix - u - 1) * sub_length].im = temp1i - temp2r; // Store rotated imaginary part for negative index
             }
         }
 
-        // Free allocated memory 
+        // Free allocated memory
         free(twiddle_real);
         free(twiddle_imag);
         free(tau_real);
@@ -1502,9 +1642,11 @@ static void mixed_radix_dit_rec(fft_data *output_buffer, fft_data *input_buffer,
  * @warning If lengths are invalid, the function exits with an error.
  * @note Uses PI = 3.1415926535897932384626433832795 for dynamic calculations.
  */
-static void bluestein_exp(fft_data *hl, fft_data *hlt, int input_length, int padded_length) {
-    if (input_length <= 0 || padded_length <= input_length) {
-        fprintf(stderr, "Error: Invalid lengths for Bluestein’s exponential - input_length: %d, padded_length: %d\n", 
+static void bluestein_exp(fft_data *hl, fft_data *hlt, int input_length, int padded_length)
+{
+    if (input_length <= 0 || padded_length <= input_length)
+    {
+        fprintf(stderr, "Error: Invalid lengths for Bluestein’s exponential - input_length: %d, padded_length: %d\n",
                 input_length, padded_length);
         exit(EXIT_FAILURE);
     }
@@ -1512,10 +1654,14 @@ static void bluestein_exp(fft_data *hl, fft_data *hlt, int input_length, int pad
     int index;
     int found = 0;
 
-    if (input_length < MAX_PRECOMPUTED_N) {
-        for (int idx = 0; idx < num_precomputed; idx++) {
-            if (chirp_sizes[idx] == input_length) {
-                for (index = 0; index < input_length; index++) {
+    if (input_length < MAX_PRECOMPUTED_N)
+    {
+        for (int idx = 0; idx < num_precomputed; idx++)
+        {
+            if (chirp_sizes[idx] == input_length)
+            {
+                for (index = 0; index < input_length; index++)
+                {
                     hlt[index] = bluestein_chirp[idx][index];
                     hl[index] = hlt[index];
                 }
@@ -1525,27 +1671,32 @@ static void bluestein_exp(fft_data *hl, fft_data *hlt, int input_length, int pad
         }
     }
 
-    if (!found) { // Fallback to dynamic computation if not precomputed or N >= MAX_PRECOMPUTED_N
+    if (!found)
+    { // Fallback to dynamic computation if not precomputed or N >= MAX_PRECOMPUTED_N
         const fft_type PI = 3.1415926535897932384626433832795;
         fft_type theta = PI / input_length;
         int l2 = 0, len2 = 2 * input_length;
-        for (index = 0; index < input_length; ++index) {
+        for (index = 0; index < input_length; ++index)
+        {
             fft_type angle = theta * l2;
             hlt[index].re = cos(angle);
             hlt[index].im = sin(angle);
             hl[index].re = hlt[index].re;
             hl[index].im = hlt[index].im;
             l2 += 2 * index + 1;
-            while (l2 > len2) l2 -= len2;
+            while (l2 > len2)
+                l2 -= len2;
         }
     }
 
-    for (index = input_length; index < padded_length - input_length + 1; index++) {
+    for (index = input_length; index < padded_length - input_length + 1; index++)
+    {
         hl[index].re = 0.0;
         hl[index].im = 0.0;
     }
 
-    for (index = padded_length - input_length + 1; index < padded_length; index++) {
+    for (index = padded_length - input_length + 1; index < padded_length; index++)
+    {
         int mirrored_index = padded_length - index;
         hl[index].re = hlt[mirrored_index].re;
         hl[index].im = hlt[mirrored_index].im;
@@ -1581,11 +1732,13 @@ static void bluestein_exp(fft_data *hl, fft_data *hlt, int input_length, int pad
  *       by transforming it into a convolution with a chirp sequence \(h(n) = e^{\pi i n^2 / N}\), enabling efficient
  *       computation via FFT-based convolution.
  */
-static void bluestein_fft(fft_data *input_data, fft_data *output_data, fft_object fft_obj, int transform_direction, int signal_length) {
+static void bluestein_fft(fft_data *input_data, fft_data *output_data, fft_object fft_obj, int transform_direction, int signal_length)
+{
     /**
      * @brief Validate signal length.
      */
-    if (signal_length <= 0) {
+    if (signal_length <= 0)
+    {
         fprintf(stderr, "Error: Signal length (%d) must be positive for Bluestein’s FFT\n", signal_length);
         exit(EXIT_FAILURE);
     }
@@ -1609,15 +1762,20 @@ static void bluestein_fft(fft_data *input_data, fft_data *output_data, fft_objec
     /**
      * @brief Allocate temporary buffers.
      */
-    fft_data *yn = (fft_data*)malloc(sizeof(fft_data) * padded_length);        // Padded input
-    fft_data *hk = (fft_data*)malloc(sizeof(fft_data) * padded_length);        // Chirp FFT
-    fft_data *temp_output = (fft_data*)malloc(sizeof(fft_data) * padded_length); // Intermediate storage
-    fft_data *yno = (fft_data*)malloc(sizeof(fft_data) * padded_length);       // Inverse FFT output
-    fft_data *hlt = (fft_data*)malloc(sizeof(fft_data) * signal_length);       // Chirp sequence
+    fft_data *yn = (fft_data *)malloc(sizeof(fft_data) * padded_length);          // Padded input
+    fft_data *hk = (fft_data *)malloc(sizeof(fft_data) * padded_length);          // Chirp FFT
+    fft_data *temp_output = (fft_data *)malloc(sizeof(fft_data) * padded_length); // Intermediate storage
+    fft_data *yno = (fft_data *)malloc(sizeof(fft_data) * padded_length);         // Inverse FFT output
+    fft_data *hlt = (fft_data *)malloc(sizeof(fft_data) * signal_length);         // Chirp sequence
 
-    if (yn == NULL || hk == NULL || temp_output == NULL || yno == NULL || hlt == NULL) {
+    if (yn == NULL || hk == NULL || temp_output == NULL || yno == NULL || hlt == NULL)
+    {
         fprintf(stderr, "Error: Memory allocation failed for Bluestein’s FFT arrays\n");
-        free(yn); free(hk); free(temp_output); free(yno); free(hlt);
+        free(yn);
+        free(hk);
+        free(temp_output);
+        free(yno);
+        free(hlt);
         exit(EXIT_FAILURE);
     }
 
@@ -1627,7 +1785,8 @@ static void bluestein_fft(fft_data *input_data, fft_data *output_data, fft_objec
      */
     bluestein_exp(temp_output, hlt, signal_length, padded_length);
     fft_type scale = 1.0 / padded_length;
-    for (loop_index = 0; loop_index < padded_length; ++loop_index) {
+    for (loop_index = 0; loop_index < padded_length; ++loop_index)
+    {
         temp_output[loop_index].im *= scale;
         temp_output[loop_index].re *= scale;
     }
@@ -1641,13 +1800,18 @@ static void bluestein_fft(fft_data *input_data, fft_data *output_data, fft_objec
      * @brief Multiply input by chirp sequence.
      * Applies h(n) for forward FFT or h^*(n) for inverse FFT.
      */
-    if (transform_direction == 1) { // Forward FFT
-        for (index = 0; index < signal_length; index++) {
+    if (transform_direction == 1)
+    { // Forward FFT
+        for (index = 0; index < signal_length; index++)
+        {
             temp_output[index].re = input_data[index].re * hlt[index].re + input_data[index].im * hlt[index].im;
             temp_output[index].im = -input_data[index].re * hlt[index].im + input_data[index].im * hlt[index].re;
         }
-    } else { // Inverse FFT
-        for (index = 0; index < signal_length; index++) {
+    }
+    else
+    { // Inverse FFT
+        for (index = 0; index < signal_length; index++)
+        {
             temp_output[index].re = input_data[index].re * hlt[index].re - input_data[index].im * hlt[index].im;
             temp_output[index].im = input_data[index].re * hlt[index].im + input_data[index].im * hlt[index].re;
         }
@@ -1656,7 +1820,8 @@ static void bluestein_fft(fft_data *input_data, fft_data *output_data, fft_objec
     /**
      * @brief Zero-pad the multiplied signal.
      */
-    for (index = signal_length; index < padded_length; index++) {
+    for (index = signal_length; index < padded_length; index++)
+    {
         temp_output[index].re = 0.0;
         temp_output[index].im = 0.0;
     }
@@ -1670,14 +1835,19 @@ static void bluestein_fft(fft_data *input_data, fft_data *output_data, fft_objec
      * @brief Pointwise multiplication in frequency domain.
      * Multiplies with hk (forward) or hk^* (inverse).
      */
-    if (transform_direction == 1) {
-        for (index = 0; index < padded_length; index++) {
+    if (transform_direction == 1)
+    {
+        for (index = 0; index < padded_length; index++)
+        {
             fft_type temp = yn[index].re * hk[index].re - yn[index].im * hk[index].im;
             yn[index].im = yn[index].re * hk[index].im + yn[index].im * hk[index].re;
             yn[index].re = temp;
         }
-    } else {
-        for (index = 0; index < padded_length; index++) {
+    }
+    else
+    {
+        for (index = 0; index < padded_length; index++)
+        {
             fft_type temp = yn[index].re * hk[index].re + yn[index].im * hk[index].im;
             yn[index].im = -yn[index].re * hk[index].im + yn[index].im * hk[index].re;
             yn[index].re = temp;
@@ -1688,7 +1858,8 @@ static void bluestein_fft(fft_data *input_data, fft_data *output_data, fft_objec
      * @brief Inverse FFT to time domain.
      * Temporarily adjusts twiddle factors for inverse transform.
      */
-    for (loop_index = 0; loop_index < padded_length; ++loop_index) {
+    for (loop_index = 0; loop_index < padded_length; ++loop_index)
+    {
         (fft_obj->twiddle + loop_index)->im = -(fft_obj->twiddle + loop_index)->im;
     }
     fft_obj->sgn = -1 * transform_direction;
@@ -1697,13 +1868,18 @@ static void bluestein_fft(fft_data *input_data, fft_data *output_data, fft_objec
     /**
      * @brief Apply chirp sequence again to extract final results.
      */
-    if (transform_direction == 1) {
-        for (index = 0; index < signal_length; index++) {
+    if (transform_direction == 1)
+    {
+        for (index = 0; index < signal_length; index++)
+        {
             output_data[index].re = yno[index].re * hlt[index].re + yno[index].im * hlt[index].im;
             output_data[index].im = -yno[index].re * hlt[index].im + yno[index].im * hlt[index].re;
         }
-    } else {
-        for (index = 0; index < signal_length; index++) {
+    }
+    else
+    {
+        for (index = 0; index < signal_length; index++)
+        {
             output_data[index].re = yno[index].re * hlt[index].re - yno[index].im * hlt[index].im;
             output_data[index].im = yno[index].re * hlt[index].im + yno[index].im * hlt[index].re;
         }
@@ -1715,7 +1891,8 @@ static void bluestein_fft(fft_data *input_data, fft_data *output_data, fft_objec
     fft_obj->sgn = original_sgn;
     fft_obj->N = original_N;
     fft_obj->lt = original_lt;
-    for (loop_index = 0; loop_index < padded_length; ++loop_index) {
+    for (loop_index = 0; loop_index < padded_length; ++loop_index)
+    {
         (fft_obj->twiddle + loop_index)->im = -(fft_obj->twiddle + loop_index)->im;
     }
 
@@ -1740,18 +1917,25 @@ static void bluestein_fft(fft_data *input_data, fft_data *output_data, fft_objec
  * @warning If the FFT object or data pointers are invalid, the function exits with an error.
  * @note Uses `mixed_radix_dit_rec` for power-of-N sizes or `bluestein_fft` for arbitrary sizes.
  */
-void fft_exec(fft_object fft_obj, fft_data *input_data, fft_data *output_data) {
-    if (fft_obj == NULL || input_data == NULL || output_data == NULL) {
+void fft_exec(fft_object fft_obj, fft_data *input_data, fft_data *output_data)
+{
+    if (fft_obj == NULL || input_data == NULL || output_data == NULL)
+    {
         fprintf(stderr, "Error: Invalid FFT object or data pointers\n");
         exit(EXIT_FAILURE);
     }
 
-    if (fft_obj->lt == 0) {
+    if (fft_obj->lt == 0)
+    {
         int stride = 1, factor_index = 0;
         mixed_radix_dit_rec(output_data, input_data, fft_obj, fft_obj->sgn, fft_obj->N, stride, factor_index);
-    } else if (fft_obj->lt == 1) {
+    }
+    else if (fft_obj->lt == 1)
+    {
         bluestein_fft(input_data, output_data, fft_obj, fft_obj->sgn, fft_obj->N);
-    } else {
+    }
+    else
+    {
         fprintf(stderr, "Error: Invalid FFT object type (lt = %d)\n", fft_obj->lt);
         exit(EXIT_FAILURE);
     }
@@ -1767,20 +1951,21 @@ void fft_exec(fft_object fft_obj, fft_data *input_data, fft_data *output_data) {
  * @return int 1 if M is fully divisible by d, 0 otherwise.
  * @warning If M or d is invalid (<= 0), the function exits with an error.
  */
-int divideby(int number, int divisor) {
-    if (number <= 0 || divisor <= 0) {
+int divideby(int number, int divisor)
+{
+    if (number <= 0 || divisor <= 0)
+    {
         fprintf(stderr, "Error: Invalid inputs for divideby - number: %d, divisor: %d\n", number, divisor);
         exit(EXIT_FAILURE);
     }
 
     int result = number;
-    while (result % divisor == 0) {
+    while (result % divisor == 0)
+    {
         result /= divisor;
     }
     return (result == 1) ? 1 : 0;
 }
-
-
 
 /**
  * @brief Checks if a number N is divisible by a series of small prime numbers.
@@ -1791,32 +1976,51 @@ int divideby(int number, int divisor) {
  * @return int 1 if N is fully divisible by the primes, 0 otherwise.
  * @warning If N is invalid (<= 0), the function exits with an error.
  */
-int dividebyN(int number) {
+int dividebyN(int number)
+{
 
     // Use lookup table for small N
-    if (number < LOOKUP_MAX) {
+    if (number < LOOKUP_MAX)
+    {
         return dividebyN_lookup[number];
     }
 
     // Fallback for larger N
     int result = number;
-    while (result % 53 == 0) result /= 53;
-    while (result % 47 == 0) result /= 47;
-    while (result % 43 == 0) result /= 43;
-    while (result % 41 == 0) result /= 41;
-    while (result % 37 == 0) result /= 37;
-    while (result % 31 == 0) result /= 31;
-    while (result % 29 == 0) result /= 29;
-    while (result % 23 == 0) result /= 23;
-    while (result % 17 == 0) result /= 17;
-    while (result % 13 == 0) result /= 13;
-    while (result % 11 == 0) result /= 11;
-    while (result % 8 == 0) result /= 8;
-    while (result % 7 == 0) result /= 7;
-    while (result % 5 == 0) result /= 5;
-    while (result % 4 == 0) result /= 4;
-    while (result % 3 == 0) result /= 3;
-    while (result % 2 == 0) result /= 2;
+    while (result % 53 == 0)
+        result /= 53;
+    while (result % 47 == 0)
+        result /= 47;
+    while (result % 43 == 0)
+        result /= 43;
+    while (result % 41 == 0)
+        result /= 41;
+    while (result % 37 == 0)
+        result /= 37;
+    while (result % 31 == 0)
+        result /= 31;
+    while (result % 29 == 0)
+        result /= 29;
+    while (result % 23 == 0)
+        result /= 23;
+    while (result % 17 == 0)
+        result /= 17;
+    while (result % 13 == 0)
+        result /= 13;
+    while (result % 11 == 0)
+        result /= 11;
+    while (result % 8 == 0)
+        result /= 8;
+    while (result % 7 == 0)
+        result /= 7;
+    while (result % 5 == 0)
+        result /= 5;
+    while (result % 4 == 0)
+        result /= 4;
+    while (result % 3 == 0)
+        result /= 3;
+    while (result % 2 == 0)
+        result /= 2;
     return (result == 1) ? 1 : 0;
 }
 
@@ -1831,45 +2035,123 @@ int dividebyN(int number) {
  * @return int Number of factors found.
  * @warning If M is invalid (<= 0) or the array is NULL, the function exits with an error.
  */
-int factors(int number, int* factors_array) {
-    if (factors_array == NULL) {
-        fprintf(stderr, "Error: Invalid inputs for factors - number: %d, factors_array: %p\n", number, (void*)factors_array);
+int factors(int number, int *factors_array)
+{
+    if (factors_array == NULL)
+    {
+        fprintf(stderr, "Error: Invalid inputs for factors - number: %d, factors_array: %p\n", number, (void *)factors_array);
         exit(EXIT_FAILURE);
     }
 
     int index = 0, temp_number = number, prime, multiplier, factor1, factor2;
     // Check divisibility by a list of primes
-    while (temp_number % 53 == 0) { factors_array[index++] = 53; temp_number /= 53; }
-    while (temp_number % 47 == 0) { factors_array[index++] = 47; temp_number /= 47; }
-    while (temp_number % 43 == 0) { factors_array[index++] = 43; temp_number /= 43; }
-    while (temp_number % 41 == 0) { factors_array[index++] = 41; temp_number /= 41; }
-    while (temp_number % 37 == 0) { factors_array[index++] = 37; temp_number /= 37; }
-    while (temp_number % 31 == 0) { factors_array[index++] = 31; temp_number /= 31; }
-    while (temp_number % 29 == 0) { factors_array[index++] = 29; temp_number /= 29; }
-    while (temp_number % 23 == 0) { factors_array[index++] = 23; temp_number /= 23; }
-    while (temp_number % 19 == 0) { factors_array[index++] = 19; temp_number /= 19; }
-    while (temp_number % 17 == 0) { factors_array[index++] = 17; temp_number /= 17; }
-    while (temp_number % 13 == 0) { factors_array[index++] = 13; temp_number /= 13; }
-    while (temp_number % 11 == 0) { factors_array[index++] = 11; temp_number /= 11; }
-    while (temp_number % 8 == 0) { factors_array[index++] = 8; temp_number /= 8; }
-    while (temp_number % 7 == 0) { factors_array[index++] = 7; temp_number /= 7; }
-    while (temp_number % 5 == 0) { factors_array[index++] = 5; temp_number /= 5; }
-    while (temp_number % 4 == 0) { factors_array[index++] = 4; temp_number /= 4; }
-    while (temp_number % 3 == 0) { factors_array[index++] = 3; temp_number /= 3; }
-    while (temp_number % 2 == 0) { factors_array[index++] = 2; temp_number /= 2; }
+    while (temp_number % 53 == 0)
+    {
+        factors_array[index++] = 53;
+        temp_number /= 53;
+    }
+    while (temp_number % 47 == 0)
+    {
+        factors_array[index++] = 47;
+        temp_number /= 47;
+    }
+    while (temp_number % 43 == 0)
+    {
+        factors_array[index++] = 43;
+        temp_number /= 43;
+    }
+    while (temp_number % 41 == 0)
+    {
+        factors_array[index++] = 41;
+        temp_number /= 41;
+    }
+    while (temp_number % 37 == 0)
+    {
+        factors_array[index++] = 37;
+        temp_number /= 37;
+    }
+    while (temp_number % 31 == 0)
+    {
+        factors_array[index++] = 31;
+        temp_number /= 31;
+    }
+    while (temp_number % 29 == 0)
+    {
+        factors_array[index++] = 29;
+        temp_number /= 29;
+    }
+    while (temp_number % 23 == 0)
+    {
+        factors_array[index++] = 23;
+        temp_number /= 23;
+    }
+    while (temp_number % 19 == 0)
+    {
+        factors_array[index++] = 19;
+        temp_number /= 19;
+    }
+    while (temp_number % 17 == 0)
+    {
+        factors_array[index++] = 17;
+        temp_number /= 17;
+    }
+    while (temp_number % 13 == 0)
+    {
+        factors_array[index++] = 13;
+        temp_number /= 13;
+    }
+    while (temp_number % 11 == 0)
+    {
+        factors_array[index++] = 11;
+        temp_number /= 11;
+    }
+    while (temp_number % 8 == 0)
+    {
+        factors_array[index++] = 8;
+        temp_number /= 8;
+    }
+    while (temp_number % 7 == 0)
+    {
+        factors_array[index++] = 7;
+        temp_number /= 7;
+    }
+    while (temp_number % 5 == 0)
+    {
+        factors_array[index++] = 5;
+        temp_number /= 5;
+    }
+    while (temp_number % 4 == 0)
+    {
+        factors_array[index++] = 4;
+        temp_number /= 4;
+    }
+    while (temp_number % 3 == 0)
+    {
+        factors_array[index++] = 3;
+        temp_number /= 3;
+    }
+    while (temp_number % 2 == 0)
+    {
+        factors_array[index++] = 2;
+        temp_number /= 2;
+    }
 
     // Handle larger numbers using a heuristic (6k ± 1 method)
-    if (temp_number > 31) {
+    if (temp_number > 31)
+    {
         prime = 2;
-        while (temp_number > 1) {
+        while (temp_number > 1)
+        {
             multiplier = prime * 6;
             factor1 = multiplier - 1;
             factor2 = multiplier + 1;
-            while (temp_number % factor1 == 0) {
+            while (temp_number % factor1 == 0)
+            {
                 factors_array[index++] = factor1;
                 temp_number /= factor1;
             }
-            while (temp_number % factor2 == 0) {
+            while (temp_number % factor2 == 0)
+            {
                 factors_array[index++] = factor2;
                 temp_number /= factor2;
             }
@@ -1883,9 +2165,9 @@ int factors(int number, int* factors_array) {
 /**
  * @brief Computes twiddle factors for a specific radix in the FFT using lookup tables.
  *
- * Generates complex exponential (twiddle) factors of the form \(e^{-2\pi i k / N}\) for a given signal length 
- * and radix, used in butterfly operations of the FFT. For common radices (2, 3, 4, 5, 7, 8), precomputed lookup 
- * tables are used to avoid runtime trigonometric calculations. For other radices or when the number of twiddles 
+ * Generates complex exponential (twiddle) factors of the form \(e^{-2\pi i k / N}\) for a given signal length
+ * and radix, used in butterfly operations of the FFT. For common radices (2, 3, 4, 5, 7, 8), precomputed lookup
+ * tables are used to avoid runtime trigonometric calculations. For other radices or when the number of twiddles
  * exceeds the table size, the function falls back to computing factors dynamically using cosine and sine functions.
  *
  * @param[out] twiddle_factors Array to store twiddle factors (length N/radix).
@@ -1896,36 +2178,44 @@ int factors(int number, int* factors_array) {
  *                 The prime factor used to divide the signal length, determining the number of twiddle factors needed.
  * @return None (void function).
  * @warning If signal_length or radix is invalid (<= 0), the function exits with an error message to stderr.
- * @note For radices 2, 3, 4, 5, 7, and 8, precomputed tables are used up to radix-1 entries, with dynamic computation 
- *       for additional twiddles if num_twiddles exceeds the table size. The first twiddle factor is always (1, 0), 
- *       and subsequent factors follow the form \(e^{-2\pi i k / N}\). This optimization reduces computational overhead 
+ * @note For radices 2, 3, 4, 5, 7, and 8, precomputed tables are used up to radix-1 entries, with dynamic computation
+ *       for additional twiddles if num_twiddles exceeds the table size. The first twiddle factor is always (1, 0),
+ *       and subsequent factors follow the form \(e^{-2\pi i k / N}\). This optimization reduces computational overhead
  *       for repeated FFT calls with common sizes.
  */
-void twiddle(fft_data *twiddle_factors, int signal_length, int radix) {
-    if (signal_length <= 0 || radix <= 0) {
+void twiddle(fft_data *twiddle_factors, int signal_length, int radix)
+{
+    if (signal_length <= 0 || radix <= 0)
+    {
         fprintf(stderr, "Error: Invalid inputs for twiddle - signal_length: %d, radix: %d\n", signal_length, radix);
         exit(EXIT_FAILURE);
     }
 
     int num_twiddles = signal_length / radix; // Number of twiddle factors needed: N/radix
 
-    if (radix <= 8 && twiddle_tables[radix]) {
+    if (radix <= 8 && twiddle_tables[radix])
+    {
         // Use precomputed table for common radices (2, 3, 4, 5, 7, 8)
         const complex_t *table = twiddle_tables[radix]; // Pointer to static twiddle table for this radix
-        for (int i = 0; i < num_twiddles && i < radix; i++) {
+        for (int i = 0; i < num_twiddles && i < radix; i++)
+        {
             // Copy precomputed values from table, cycling through radix-1 entries
             twiddle_factors[i].re = table[i % (radix - 1)].re; // Real part from table
             twiddle_factors[i].im = table[i % (radix - 1)].im; // Imaginary part from table
         }
-        for (int i = radix - 1; i < num_twiddles; i++) {
+        for (int i = radix - 1; i < num_twiddles; i++)
+        {
             // Compute remaining twiddles dynamically if num_twiddles exceeds table size
             fft_type angle = PI2 * i / signal_length; // Angle for twiddle factor: 2πk/N
             twiddle_factors[i].re = cos(angle);       // Real part: cos(2πk/N)
             twiddle_factors[i].im = -sin(angle);      // Imaginary part: -sin(2πk/N) for forward FFT
         }
-    } else {
+    }
+    else
+    {
         // Fallback for uncommon radices or when no table exists
-        for (int i = 0; i < num_twiddles; i++) {
+        for (int i = 0; i < num_twiddles; i++)
+        {
             fft_type angle = PI2 * i / signal_length; // Angle step: 2πk/N for k = 0 to N/radix - 1
             twiddle_factors[i].re = cos(angle);       // Real component of e^(-2πi k/N)
             twiddle_factors[i].im = -sin(angle);      // Imaginary component, negative for forward transform
@@ -1945,38 +2235,50 @@ void twiddle(fft_data *twiddle_factors, int signal_length, int radix) {
  * @param[in] prime_factors Array of prime factors (size num_factors).
  * @param[in] num_factors Number of prime factors (num_factors > 0).
  */
-void longvectorN(fft_data *twiddle_sequence, int signal_length, int *prime_factors, int num_factors) {
-    if (signal_length <= 0 || prime_factors == NULL || num_factors <= 0) {
+void longvectorN(fft_data *twiddle_sequence, int signal_length, int *prime_factors, int num_factors)
+{
+    if (signal_length <= 0 || prime_factors == NULL || num_factors <= 0)
+    {
         fprintf(stderr, "Error: Invalid inputs for longvectorN - signal_length: %d, prime_factors: %p, num_factors: %d\n",
-                signal_length, (void*)prime_factors, num_factors);
+                signal_length, (void *)prime_factors, num_factors);
         exit(EXIT_FAILURE);
     }
 
     int cumulative_length = 1; // Tracks L as in original
     int counter = 0;
 
-    for (int i = 0; i < num_factors; i++) {
+    for (int i = 0; i < num_factors; i++)
+    {
         int radix = prime_factors[num_factors - 1 - i];
         int sub_length = cumulative_length; // Ls = L before update
         cumulative_length *= radix;         // L = L * radix
 
 #ifdef USE_TWIDDLE_TABLES
-        if (radix <= 13 && twiddle_tables[radix] != NULL) {
+        if (radix <= 13 && twiddle_tables[radix] != NULL)
+        {
             const complex_t *table = twiddle_tables[radix];
-            for (int j = 0; j < sub_length; j++) {
-                for (int k = 0; k < radix - 1; k++) {
-                    if (counter < signal_length - 1) { // Prevent overflow
+            for (int j = 0; j < sub_length; j++)
+            {
+                for (int k = 0; k < radix - 1; k++)
+                {
+                    if (counter < signal_length - 1)
+                    { // Prevent overflow
                         twiddle_sequence[counter].re = table[k].re;
                         twiddle_sequence[counter].im = table[k].im;
                         counter++;
                     }
                 }
             }
-        } else {
+        }
+        else
+        {
             fft_type theta = -PI2 / cumulative_length;
-            for (int j = 0; j < sub_length; j++) {
-                for (int k = 0; k < radix - 1; k++) {
-                    if (counter < signal_length - 1) {
+            for (int j = 0; j < sub_length; j++)
+            {
+                for (int k = 0; k < radix - 1; k++)
+                {
+                    if (counter < signal_length - 1)
+                    {
                         fft_type angle = (k + 1) * j * theta;
                         twiddle_sequence[counter].re = cos(angle);
                         twiddle_sequence[counter].im = sin(angle);
@@ -1987,9 +2289,12 @@ void longvectorN(fft_data *twiddle_sequence, int signal_length, int *prime_facto
         }
 #else
         fft_type theta = -PI2 / cumulative_length;
-        for (int j = 0; j < sub_length; j++) {
-            for (int k = 0; k < radix - 1; k++) {
-                if (counter < signal_length - 1) {
+        for (int j = 0; j < sub_length; j++)
+        {
+            for (int k = 0; k < radix - 1; k++)
+            {
+                if (counter < signal_length - 1)
+                {
                     fft_type angle = (k + 1) * j * theta;
                     twiddle_sequence[counter].re = cos(angle);
                     twiddle_sequence[counter].im = sin(angle);
@@ -2000,13 +2305,14 @@ void longvectorN(fft_data *twiddle_sequence, int signal_length, int *prime_facto
 #endif
     }
 
-    if (counter != signal_length - 1) {
+    if (counter != signal_length - 1)
+    {
         fprintf(stderr, "Warning: Twiddle factor count (%d) does not match expected (%d) for N=%d\n",
                 counter, signal_length - 1, signal_length);
     }
 }
 
-void free_fft(fft_object object) {
-	free(object);
+void free_fft(fft_object object)
+{
+    free(object);
 }
-
